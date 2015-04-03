@@ -1,23 +1,38 @@
-package geotrellis.admin
+package geotrellis.admin.ingest
 
+import geotrellis.spark.ingest.Tiler
+import geotrellis.spark.ingest.Reproject
+import geotrellis.vector._
+import geotrellis.raster._
+import geotrellis.raster.reproject._
+import geotrellis.proj4.CRS
+import org.apache.spark.rdd._
+import monocle.syntax._
 import geotrellis.spark._
-import geotrellis.spark.ingest.NetCDFIngestCommand._
-import geotrellis.spark.tiling._
-import geotrellis.spark.io.accumulo._
-import geotrellis.spark.ingest.{Ingest, IngestArgs, HadoopIngestArgs, Tiler, Pyramid}
-import geotrellis.spark.io.hadoop._
-import geotrellis.spark.io.hadoop.formats.NetCdfBand
-import org.apache.accumulo.core.client.security.tokens.PasswordToken
-import org.apache.spark._
-import com.quantifind.sumac.ArgMain
-import geotrellis.spark.cmd.args._
+import spire.syntax.cfor._
 
 package object ingest {
-    implicit val tiler: Tiler[NetCdfBand, SpaceTimeKey] = {
-      val getExtent = (inKey: NetCdfBand) => inKey.extent
-      val createKey = (inKey: NetCdfBand, spatialComponent: SpatialKey) =>
-        SpaceTimeKey(spatialComponent, inKey.time)
+  type Tiler[T, K] = (RDD[(T, Tile)], RasterMetaData) => RasterRDD[K]
+  type IngestKey[T] = KeyComponent[T, ProjectedExtent]
 
+  implicit class IngestKeyWrapper[T: IngestKey](key: T) {
+    val _projectedExtent = implicitly[IngestKey[T]]
+
+    def projectedExtent: ProjectedExtent = key &|-> _projectedExtent.lens get
+
+    def updateProjectedExtent(pe: ProjectedExtent): T =
+      key &|-> _projectedExtent.lens set(pe)
+  }
+
+  implicit object ProjectedExtentComponent extends IdentityComponent[ProjectedExtent]
+
+  implicit def projectedExtentToSpatialKeyTiler: Tiler[ProjectedExtent, SpatialKey] = {
+      val getExtent = (inKey: ProjectedExtent) => inKey.extent
+      val createKey = (inKey: ProjectedExtent, spatialComponent: SpatialKey) => spatialComponent
       Tiler(getExtent, createKey)
     }
+
+  implicit class ReprojectWrapper[T: IngestKey](rdd: RDD[(T, Tile)]) {
+    def reproject(destCRS: CRS): RDD[(T, Tile)] = Reproject(rdd, destCRS)
+  }
 }

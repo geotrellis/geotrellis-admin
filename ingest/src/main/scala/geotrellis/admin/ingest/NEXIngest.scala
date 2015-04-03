@@ -1,10 +1,10 @@
 package geotrellis.admin.ingest
 
 import geotrellis.spark._
+import geotrellis.spark.ingest._
 import geotrellis.spark.ingest.NetCDFIngestCommand._
 import geotrellis.spark.tiling._
 import geotrellis.spark.io.accumulo._
-import geotrellis.spark.ingest._
 import geotrellis.spark.cmd.args._
 import geotrellis.spark.io.hadoop._
 import geotrellis.spark.utils.SparkUtils
