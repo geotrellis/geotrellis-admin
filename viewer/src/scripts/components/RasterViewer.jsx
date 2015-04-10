@@ -16,6 +16,7 @@ var $ = require('jquery');
 
 var RasterViewer = React.createClass({
   getInitialState: function() {
+
     return { 
       url: "http://localhost:8088",
       catalog: [],      
@@ -32,7 +33,6 @@ var RasterViewer = React.createClass({
   
   handleChangeCatalogUrl: function() {  
     var url = this.refs.url.getValue();
-
     $.get(url + "/catalog/", 
       function(result) {
         if (this.isMounted()) { this.setState({ catalog: result, url: url }) }
@@ -44,7 +44,6 @@ var RasterViewer = React.createClass({
     var self = this;
     var cursor = Cursor.build(this);
     console.log('Active Layer', this.state.active.entry, this.state.active.band);
-    
     return (
       <div className="row">
         <div className="col-md-9">
