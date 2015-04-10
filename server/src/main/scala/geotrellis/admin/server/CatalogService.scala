@@ -39,7 +39,6 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
  val accumulo = AccumuloInstance(argHolder.instance, argHolder.zookeeper,
    argHolder.user, new PasswordToken(argHolder.password))
  val catalog = accumulo.catalog
-
  /** Simple route to test responsiveness of service. */
  val pingPong = path("ping")(complete("pong"))
 
@@ -53,7 +52,6 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
          complete {
            future {
              val zooms = catalog.metaDataCatalog.zoomLevelsFor(layer)
-
              val tile = 
                if(zooms.contains(zoom)) {
                  val layerId = LayerId(layer, zoom)
@@ -81,12 +79,7 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
                    val targetExtent = mapTransform(x, y)
                    val gb @ GridBounds(nx, ny, _, _) = rmd.mapTransform(targetExtent)
                    val sourceExtent = rmd.mapTransform(nx, ny)
-                   println(s"SOURCE TILELAYOUT: ${rmd.tileLayout}")
-                   println(s"TARGET TILELAYOUT: ${layoutLevel.tileLayout}")
-                   println(s"GRIDBOUNDS: $gb")
-                   println(s"SOURCE EXTENT $sourceExtent")
-                   println(s"TARGET EXTENT $targetExtent")
-
+                  
                    val largerTile =
                      timeOption match {
                        case Some(timeStr) =>
@@ -122,11 +115,8 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
        // get the entire catalog
        complete {
          import DefaultJsonProtocol._
-
          catalog.metaDataCatalog.fetchAll.toSeq.map {
            case (key, lmd) =>
-             println(s"Loading $key")
-             println(s"checking if this works $key")
              val (layer, table) = key
              val md = lmd.rasterMetaData
              val center = md.extent.reproject(md.crs, LatLng).center
@@ -173,17 +163,15 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
          }.collect
          JsObject("time" -> bands.toJson)
        } }
-     } ~ 
+     } 
    }
  }
 
  def timedCreate[T](startMsg:String,endMsg:String)(f:() => T):T = {
-   println(startMsg)
    val s = System.currentTimeMillis
    val result = f()
    val e = System.currentTimeMillis
    val t = "%,d".format(e-s)
-   println(s"\t$endMsg (in $t ms)")
    result
  }
 
