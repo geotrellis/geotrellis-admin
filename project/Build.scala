@@ -65,14 +65,10 @@ object Build extends Build {
       organization := "com.azavea",
       version := "0.1.0-SNAPSHOT",
       libraryDependencies ++= {
-        val akkaV = "2.2.3"
-        val sprayV = "1.2.2"
+        val akkaV = "2.3.9"
+        val sprayV = "1.3.2"
         val geotrellisV = "0.10.0-SNAPSHOT"
         Seq(
-          "io.spray"            %   "spray-can"     % sprayV,
-          "io.spray"            %   "spray-routing" % sprayV,
-          "io.spray"            %   "spray-caching" % sprayV,
-          "io.spray"            %%  "spray-json"    % "1.2.6",
           "com.typesafe.akka"   %%  "akka-actor"    % akkaV,
           "com.typesafe.akka"   %%  "akka-testkit"  % akkaV   % "test",
           "com.quantifind" %% "sumac" % "0.3.0",

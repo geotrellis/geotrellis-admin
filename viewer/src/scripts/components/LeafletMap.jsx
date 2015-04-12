@@ -63,7 +63,6 @@ var LeafletMap = React.createClass({
           map.lc.removeLayer(oldLayer);
         }
 
-
       }
       
       var oldLayer = this.layer;    
