@@ -57,23 +57,6 @@ trait ZonalSummaryRoutes { self: HttpService with CorsSupport =>
               .sortBy(_._1) )
           } 
         }          
-
-        // path("multimodel") {
-        //   complete {
-        //     val extent = extents(city).reproject(LatLng, md.crs)
-        //     val bounds = md.mapTransform(extent)
-        //     val model1 = catalog.load[SpaceTimeKey](LayerId("tas-miroc5-rcp45",4), FilterSet(SpaceFilter[SpaceTimeKey](bounds))).get
-        //     val model2 = catalog.load[SpaceTimeKey](LayerId("tas-access1-rcp45",4), FilterSet(SpaceFilter[SpaceTimeKey](bounds))).get
-        //     val model3 = catalog.load[SpaceTimeKey](LayerId("tas-cm-rcp45",4), FilterSet(SpaceFilter[SpaceTimeKey](bounds))).get
-        //     val ret = new RasterRDD[SpaceTimeKey](model1.union(model2).union(model3), md)
-        //       .mapKeys { key => key.updateTemporalComponent(key.temporalKey.time.withMonthOfYear(1).withDayOfMonth(1).withHourOfDay(0)) }
-        //       .averageByKey
-        //       .zonalSummaryByKey(extent, Double.MinValue, MaxDouble, stk => stk.temporalComponent.time)
-        //       .collect
-        //       .sortBy(_._1)
-        //     statsReponse("miroc5-access1-cm", ret)
-        //   }
-        // } 
       }
     }
   }
@@ -98,7 +81,7 @@ object ZonalSummaryRoutes {
           JsObject(
             "time" -> JsString(date.toString), 
             "mean" -> JsNumber(value),
-            "min" -> JsNumber(value * (1 + scala.util.Random.nextDouble/3)), // I know, I'm a liar
+            "min" -> JsNumber(value * (1 + scala.util.Random.nextDouble/3)),
             "max" -> JsNumber(value * (1 - scala.util.Random.nextDouble/3))
           )
         }: _*)

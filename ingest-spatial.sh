@@ -5,7 +5,7 @@ JAR=ingest/target/scala-2.10/gt-admin-ingest-assembly-0.1.0-SNAPSHOT.jar
  
 # Directory with the input tiled GeoTIFF's 
 # NEED TO FILL THIS OUT
-INPUT=file:/Users/rob/proj/climate/data/one-month-tiles
+INPUT=file:/Users/markdaniel/Downloads/Data/one-month-tiles
 #INPUT=
  
 # Table to store tiles
