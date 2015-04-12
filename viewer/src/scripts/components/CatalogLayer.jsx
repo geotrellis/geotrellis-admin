@@ -31,7 +31,11 @@ var CatalogLayer = React.createClass({
 
   handleSelectLayer: function() {
     var zoom = this.refs.zoom.getDOMNode().value.trim();
-    var band = this.refs.band.getDOMNode().value.trim();
+    if (this.refs.band == null){//if no node for empty band, provide an empty value
+      var band = "";
+    else
+      var band = this.refs.band.getDOMNode().value.trim();
+    
     var bands;
 
     if (band == "")
@@ -39,7 +43,6 @@ var CatalogLayer = React.createClass({
     else
       bands = {'time': band };
 
-    console.log("Layer Click", this.props.layerName, zoom, band);
     var entry = _.find(this.props.entries, function(e) {return e.layer.zoom == zoom});
 
     this.props.active.set(
@@ -65,19 +68,31 @@ var CatalogLayer = React.createClass({
       return <option value={time}>{time}</option>;        
     });
 
+    if (bandOptions.length > 0){ //provide a selector for bands with values, none for those without
+      return (        
+          <tr>
+            <td>
+              <Button onClick={this.handleSelectLayer} bsStyle="primary" bsSize="xsmall">{ this.props.layerName }</Button>        
+            </td>
+            <td>
+              <select ref="zoom">{ zoomOptions }</select>
+            </td>
+            <td>
+                <select ref="band">{ bandOptions }</select>
+            </td>
+          </tr>);
+    }else{
+      return(
+           <tr>
+              <td>
+                <Button onClick={this.handleSelectLayer} bsStyle="primary" bsSize="xsmall">{ this.props.layerName }</Button>        
+              </td>
+              <td>
+                  <select ref="zoom">{ zoomOptions }</select>
+              </td>
+            </tr>);
+    }
 
-    return (        
-    <tr>
-      <td>
-        <Button onClick={this.handleSelectLayer} bsStyle="primary" bsSize="xsmall">{ this.props.layerName }</Button>        
-      </td>
-      <td>
-        <select ref="zoom">{ zoomOptions }</select>
-      </td>
-      <td>
-        <select ref="band">{ bandOptions }</select>
-      </td>
-    </tr>);
   }  
 });
 
