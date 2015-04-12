@@ -31,7 +31,7 @@ var CatalogLayer = React.createClass({
 
   handleSelectLayer: function() {
     var zoom = this.refs.zoom.getDOMNode().value.trim();
-    if (this.refs.band == null){//if no node for empty band, provide an empty value
+    if (this.refs.band == null)//if no node for empty band, provide an empty value
       var band = "";
     else
       var band = this.refs.band.getDOMNode().value.trim();
