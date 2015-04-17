@@ -1,10 +1,10 @@
 package geotrellis.admin.ingest
 
 import geotrellis.spark._
+import geotrellis.spark.ingest._
 import geotrellis.spark.ingest.NetCDFIngestCommand._
 import geotrellis.spark.tiling._
 import geotrellis.spark.io.accumulo._
-import geotrellis.spark.ingest._
 import geotrellis.spark.cmd.args._
 import geotrellis.spark.io.hadoop._
 import geotrellis.spark.utils.SparkUtils
@@ -56,12 +56,9 @@ object NEXIngest extends ArgMain[AccumuloIngestArgs] with Logging {
         classOf[Tile]
       )
 
-    val (level, rdd) =  Ingest[SpaceTimeInputKey, SpaceTimeKey](source, args.destCrs, layoutScheme)
-
-    if (args.pyramid) {
-      Pyramid.saveLevels(rdd, level, layoutScheme)(save)
-    } else{
-      save(rdd, level)
+    Ingest[SpaceTimeInputKey, SpaceTimeKey](source, args.destCrs, layoutScheme, args.pyramid){ (rdd, level) => 
+              accumulo.catalog.save(LayerId(args.layerName, level.zoom), args.table, rdd, args.clobber)
     }
+    
   }
 }

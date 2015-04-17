@@ -4,7 +4,6 @@ import com.quantifind.sumac.ArgMain
 import com.quantifind.sumac.validation.Required
 import geotrellis.spark._
 import geotrellis.spark.cmd.args._
-import geotrellis.spark.ingest.IngestArgs
 import geotrellis.spark.io.hadoop._
 import geotrellis.spark.io.accumulo._
 import geotrellis.spark.op.stats._
