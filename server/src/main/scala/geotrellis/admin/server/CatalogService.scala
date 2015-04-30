@@ -47,7 +47,7 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
  /** Server out TMS tiles for some layer */
  def tmsRoute =
    pathPrefix(Segment / IntNumber / IntNumber / IntNumber) { (layer, zoom, x, y) =>
-     parameters('time.?, 'breaks.?) { (timeOption, breaksOption) =>    
+     parameters('time.?, 'breaks.?, 'colorRamp.?) { (timeOption, breaksOption, colorOption) =>    
        respondWithMediaType(MediaTypes.`image/png`) {
          complete {
            future {
@@ -94,15 +94,21 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
                    sys.error("NOPE!")
                  }
                }
-
+            
+             var rampOption = "blue-to-yellow-to-red-heatmap";  //first ramp in drop down
+             colorOption match {
+              case Some(colorRamp) => 
+                rampOption = colorRamp
+              case None =>
+             }  
 
              breaksOption match {
                case Some(breaks) =>
-                 if(layer == "diff") tile.renderPng(ColorRamps.LightToDarkGreen, breaks.split(",").map(_.toInt)).bytes
-                 else tile.renderPng(ColorRamps.BlueToOrange, breaks.split(",").map(_.toInt)).bytes
+                 var colorToRender = ColorRampMap.getOrElse(rampOption, ColorRamps.HeatmapBlueToYellowToRedSpectrum)
+                 tile.renderPng(colorToRender, breaks.split(",").map(_.toInt)).bytes
                case None =>
                  tile.renderPng.bytes  
-             }              
+             }             
            }
          }
        }
@@ -232,9 +238,20 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
      }
    }
  }
+
+ def colorRoute = cors {
+   import DefaultJsonProtocol._
+   path("") {
+     complete {
+       JsObject("colors" -> ColorRampMap.getJson.parseJson)
+     }
+   }
+ }
+
  def root = {
    pathPrefix("catalog") { catalogRoute } ~
      pathPrefix("tms") { tmsRoute } ~
+     pathPrefix("colors") { colorRoute } ~
      pixelRoute
  }
 
