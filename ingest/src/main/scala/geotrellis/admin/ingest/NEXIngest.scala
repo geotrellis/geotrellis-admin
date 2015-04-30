@@ -46,7 +46,7 @@ object NEXIngest extends ArgMain[AccumuloIngestArgs] with Logging {
     }
 */
     //Sage wrote this part
-    val writer = AccumuloRasterCatalog().writer[SpaceTimeKey](HilbertKeyIndexMethod.apply(5), args.table)
+    val writer = AccumuloRasterCatalog().writer[SpaceTimeKey](ZCurveKeyIndexMethod.byYear, args.table)
 /*
 
     Ingest[ProjectedExtent, SpaceTimeKey](source, args.destCrs, layoutScheme, args.pyramid){ (rdd, level) => 
