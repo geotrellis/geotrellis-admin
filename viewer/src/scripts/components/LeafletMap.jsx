@@ -73,24 +73,18 @@ var LeafletMap = React.createClass({
     $.get(this.props.Url + "/valuegrid?layer=" + active.entry.layer.name + "&zoom=" + active.entry.layer.zoom + "&lat=" + latLng.lat + "&lng=" + latLng.lng + "&x=" + mousePoint.x + "&y=" + mousePoint.y + "&size=3", 
       function(data) {
         this.setState({ values: data.values, numCols: data.numCols }) 
-      //   if (this.isMounted()) { this.setProps({ values: data.values }) };
-      //     console.log('values are now ', this.props.values)
        }.bind(this)
     );
   },
 
   render: function() {      
     var active = this.props.active; 
-    console.log('***************active :', active)
     
     var entry = this.props.active.entry;
-    console.log('***************entry:', entry)
     var entries = this.props.entries;
      var clickOptions = _.map(entries, function(e) {
-         console.log('For clickOptions, e is: ', e);
          return e;
      });
-     console.log('clickOptions ', clickOptions);
 
 
     if (this.isMounted() && active.entry) {      
@@ -108,7 +102,6 @@ var LeafletMap = React.createClass({
       var args = active.band;      
       args['breaks'] = active.entry.breaks.join(',');      
       var url = this.props.tmsUrl + "/" + active.entry.layer.name  + "/{z}/{x}/{y}?" + $.param( args );
-      console.log('url is ', url)
       var newLayer = L.tileLayer(url, {minZoom: 1, maxZoom: 12, tileSize: 256, tms: false, opacity: 0.95});
       newLayer.addTo(this.map);
       this.map.lc.addOverlay(newLayer, entry.layer.name);

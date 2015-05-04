@@ -60,12 +60,10 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
              val tile = 
                if(zooms.contains(zoom)) {
                  val layerId = LayerId(layer, zoom)
-                     val spacialkey = SpatialKey(x, y);
                  timeOption match {
                    case Some(timeStr) =>
                      val time = DateTime.parse(timeStr)
                      catalog.loadTile(layerId, SpaceTimeKey(x, y, time))
-
                    case None =>
                         
                        catalog.loadTile(layerId, SpatialKey(x, y))
@@ -184,8 +182,7 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
 
    path("pixel") {
      get {
-       parameters( 'zoom.as[Int], 'x.as[Double], 'y.as[Double]) { (zoom, x, y) =>
-        val name = "nexmonth_gtadmin";
+       parameters( 'name, 'zoom.as[Int], 'x.as[Double], 'y.as[Double]) { (name, zoom, x, y) =>
          val layer = LayerId(name, zoom)
          val (lmd, params) = catalog.metaDataCatalog.load(layer)
          val md = lmd.rasterMetaData
@@ -234,7 +231,7 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
          }
        }
      }
-   } //~
+   } 
  }
 
  def valueRoute = cors{
@@ -277,7 +274,6 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
         val valLen = values.length;
         complete{
         JsObject(
-            //"values" -> JsString(values)
             "success" -> JsString("1"),
             "values" -> (values.toVector).toJson,
             "numCols" -> JsNumber(size * 2 + 1)
