@@ -18,12 +18,14 @@ var Catalog = React.createClass({
         'band': {}         
       } 
     );
+
   },
 
   render: function () {
     var self = this;
  
     var layerGroups = _.groupBy(this.props.catalog, function(r) {return r.layer.name});
+    console.log('layerGroups', layerGroups)
 
     var layerList = _.map(_.keys(layerGroups), function(layerName) {  
       var entries = _.sortBy(layerGroups[layerName], function(e) { return e.layer.zoom });
@@ -37,6 +39,7 @@ var Catalog = React.createClass({
       </thead>
       <tbody> {layerList} </tbody>
     </Table>);
+
   }
 });
 
