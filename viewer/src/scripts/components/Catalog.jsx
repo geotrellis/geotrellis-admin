@@ -37,6 +37,7 @@ var Catalog = React.createClass({
       </thead>
       <tbody> {layerList} </tbody>
     </Table>);
+
   }
 });
 

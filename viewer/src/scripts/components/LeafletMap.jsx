@@ -10,6 +10,9 @@ var _     = require("underscore");
 var L = require('leaflet')
 require('style!leaflet/dist/leaflet.css')
 
+var ValueModal = require('./ValueModal.jsx');
+var ModalTrigger = require("react-bootstrap/ModalTrigger");
+
 var Layers = {
   stamen: { 
     toner:      'http://{s}.tile.stamen.com/toner/{z}/{x}/{y}.png',   
@@ -40,6 +43,13 @@ var LeafletMap = React.createClass({
   map: null, 
   layer: null,
 
+  getInitialState: function() {
+    return {
+      values : [],
+      numCols : null
+    };
+  },
+
   componentDidMount: function () {    
     this.map = L.map(this.getDOMNode());
 
@@ -49,10 +59,30 @@ var LeafletMap = React.createClass({
 
     this_map = this.map;
   },
+  valuegrid: function(e){
+    var active = this.props.active; 
+    
+    var entry = active.entry;
+    var entries = this.props.entries;
+
+    var mousePoint = this.map.mouseEventToLayerPoint(e);
+    var latLng = this.map.layerPointToLatLng(mousePoint);
+    $.get(this.props.Url + "/valuegrid?layer=" + active.entry.layer.name + "&zoom=" + active.entry.layer.zoom + "&x=" + latLng.lng + "&y=" + latLng.lat + "&size=3", 
+      function(data) {
+        this.setState({ values: data.values, numCols: data.numCols }) 
+       }.bind(this)
+    );
+  },
 
   render: function() {      
     var active = this.props.active; 
+    
     var entry = this.props.active.entry;
+    var entries = this.props.entries;
+     var clickOptions = _.map(entries, function(e) {
+         return e;
+     });
+
 
     if (this.isMounted() && active.entry) {      
       this.map.setView([entry.center[1], entry.center[0]], entry.layer.zoom);
@@ -62,7 +92,6 @@ var LeafletMap = React.createClass({
           map.removeLayer(oldLayer) 
           map.lc.removeLayer(oldLayer);
         }
-
 
       }
       
@@ -80,7 +109,9 @@ var LeafletMap = React.createClass({
     } 
     
     return (
-      <div className="leafletMap" id="map" />
+      <ModalTrigger modal={<ValueModal values = {this.state.values} numCols = {this.state.numCols}/>}>
+      <div className="leafletMap" id="map" onClick={this.valuegrid} />
+       </ModalTrigger>
     );
   }
 });

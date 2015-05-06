@@ -18,12 +18,17 @@ import geotrellis.spark.utils.SparkUtils
 import geotrellis.vector._
 import geotrellis.vector.reproject._
 import org.apache.accumulo.core.client.security.tokens.PasswordToken
+import scala.collection.mutable
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import spray.http.{MediaTypes }
 import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.routing._
+import akka.actor._
+import spray.can.Http
+import java.io.FileOutputStream
+import spire.syntax.cfor._
 
 
 class CatalogArgs extends AccumuloArgs
@@ -55,14 +60,11 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
              val tile = 
                if(zooms.contains(zoom)) {
                  val layerId = LayerId(layer, zoom)
-
                  timeOption match {
                    case Some(timeStr) =>
                      val time = DateTime.parse(timeStr)
-
                      catalog.loadTile(layerId, SpaceTimeKey(x, y, time))
                    case None =>
-
                        catalog.loadTile(layerId, SpatialKey(x, y))
                  }
                } else {
@@ -95,7 +97,6 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
                  }
                }
 
-
              breaksOption match {
                case Some(breaks) =>
                  if(layer == "diff") tile.renderPng(ColorRamps.LightToDarkGreen, breaks.split(",").map(_.toInt)).bytes
@@ -112,7 +113,6 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
  def catalogRoute = cors {
    path("") {
      get {
-       // get the entire catalog
        complete {
          import DefaultJsonProtocol._
          catalog.metaDataCatalog.fetchAll.toSeq.map {
@@ -181,7 +181,7 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
 
    path("pixel") {
      get {
-       parameters('name, 'zoom.as[Int], 'x.as[Double], 'y.as[Double]) { (name, zoom, x, y) =>
+       parameters( 'name, 'zoom.as[Int], 'x.as[Double], 'y.as[Double]) { (name, zoom, x, y) =>
          val layer = LayerId(name, zoom)
          val (lmd, params) = catalog.metaDataCatalog.load(layer)
          val md = lmd.rasterMetaData
@@ -230,12 +230,62 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
          }
        }
      }
-   }
+   } 
  }
+
+ def valueRoute = cors{
+  import DefaultJsonProtocol._
+      import org.apache.spark.SparkContext._
+    path("valuegrid") {
+        get{
+      parameters(
+        'layer,
+        'zoom.as[Int],
+        'x.as[Double], 
+        'y.as[Double],
+        'size.as[Int]) { (layer, zoom, x, y, size) =>
+        val layerId = LayerId(layer, zoom)
+        val (meta, _) = catalog.metaDataCatalog.load(layerId)
+        val clickPoint = Point(x, y).reproject(LatLng, meta.rasterMetaData.crs)
+        val rmd = meta.rasterMetaData
+        val spatialKey = rmd.mapTransform(clickPoint)
+        val tile = catalog.loadTile(layerId, spatialKey)
+        val tileExtent = rmd.mapTransform(spatialKey)
+
+        val rasterExtent = RasterExtent(tileExtent, tile.cols, tile.rows)
+        val (col, row) = rasterExtent.mapToGrid(clickPoint.x, clickPoint.y)
+
+
+        val values = mutable.ListBuffer[String]()
+
+        cfor(row - size)(_ <= row + size, _ + 1) { row =>  
+          cfor(col - size)(_ <= col + size, _ + 1) { col =>
+             if(0 <= col && col <= tile.cols && 0 <= row && row <= tile.rows) { 
+               values += "\"%.2f\"".format(tile.getDouble(col,row))
+             } else {
+               values += "\"\""
+             }
+          }
+        }
+        val valLen = values.length;
+        complete{
+        JsObject(
+            "success" -> JsString("1"),
+            "values" -> (values.toVector).toJson,
+            "numCols" -> JsNumber(size * 2 + 1)
+            )
+      }
+      }
+      }
+    }
+ }
+
  def root = {
    pathPrefix("catalog") { catalogRoute } ~
      pathPrefix("tms") { tmsRoute } ~
-     pixelRoute
+     valueRoute ~
+     pixelRoute ~
+     pathPrefix("valuegrid") { valueRoute }
  }
 
  startServer(interface = "0.0.0.0", port = 8088) {
