@@ -20,17 +20,6 @@ var ValueModal = React.createClass({
     };
   },
 
-  componentDidMount: function() {
-    $.get(this.props.source, function(props) {
-      if (this.isMounted()) {
-        this.setState({
-          values : props.values,
-          numCols : props.numCols
-        });
-      }
-    }.bind(this));
-  },
-
   componentWillReceiveProps: function(nextProps) {
   this.setState({
     values : nextProps.values,

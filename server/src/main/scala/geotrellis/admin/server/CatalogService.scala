@@ -65,7 +65,6 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
                      val time = DateTime.parse(timeStr)
                      catalog.loadTile(layerId, SpaceTimeKey(x, y, time))
                    case None =>
-                        
                        catalog.loadTile(layerId, SpatialKey(x, y))
                  }
                } else {
@@ -242,17 +241,14 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
       parameters(
         'layer,
         'zoom.as[Int],
-        'lat.as[Double],
-        'lng.as[Double],
         'x.as[Double], 
         'y.as[Double],
-        'size.as[Int]) { (layer, zoom, lat, lng, x, y, size) =>
+        'size.as[Int]) { (layer, zoom, x, y, size) =>
         val layerId = LayerId(layer, zoom)
         val (meta, _) = catalog.metaDataCatalog.load(layerId)
         val clickPoint = Point(x, y).reproject(LatLng, meta.rasterMetaData.crs)
         val rmd = meta.rasterMetaData
         val spatialKey = rmd.mapTransform(clickPoint)
-        //spatialKey = SpatialKey(16, 26) //uncomment to test with loadable tile values
         val tile = catalog.loadTile(layerId, spatialKey)
         val tileExtent = rmd.mapTransform(spatialKey)
 

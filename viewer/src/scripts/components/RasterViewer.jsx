@@ -7,7 +7,6 @@
 var React = require('react');
 var LeafletMap = require('./LeafletMap.jsx');
 var Catalog = require('./Catalog.jsx');
-var ValueViewer = require('./ValueViewer.jsx');
 var Layers = require('./Layers.jsx');
 var ValueModal = require('./ValueModal.jsx');
 var ValueGrid = require('./ValueGrid.jsx');
@@ -42,20 +41,16 @@ var RasterViewer = React.createClass({
   handleLayersUrl: function(){
       var url = this.refs.url.getValue();
       //gtUrl
-      console.log('IN HANDLE LAYERS URL')
       $.get(url + "/gt/colors/",
         function(result){
-          console.log('result from colors is ', result);
         }.bind(this)
         );
   },
   
   handleChangeCatalogUrl: function() {  
     var url = this.refs.url.getValue();
-    console.log('in handleChangeCatalogUrl:', url)
     $.get(url + "/catalog/", 
       function(result) {
-        console.log('result: ', result)
         if (this.isMounted()) { this.setState({ catalog: result, url: url }) }
       }.bind(this)
     );
@@ -64,8 +59,6 @@ var RasterViewer = React.createClass({
   render: function() { 
     var self = this;
     var cursor = Cursor.build(this);
-    console.log('state is ', this.state)
-    console.log('props is ', this.props)
     return (
       <div className="row">
 

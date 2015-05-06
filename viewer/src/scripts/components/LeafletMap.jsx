@@ -64,13 +64,10 @@ var LeafletMap = React.createClass({
     
     var entry = active.entry;
     var entries = this.props.entries;
-    var clickOptions = _.map(entries, function(e) {
-         return e;
-    });
 
     var mousePoint = this.map.mouseEventToLayerPoint(e);
     var latLng = this.map.layerPointToLatLng(mousePoint);
-    $.get(this.props.Url + "/valuegrid?layer=" + active.entry.layer.name + "&zoom=" + active.entry.layer.zoom + "&lat=" + latLng.lat + "&lng=" + latLng.lng + "&x=" + mousePoint.x + "&y=" + mousePoint.y + "&size=3", 
+    $.get(this.props.Url + "/valuegrid?layer=" + active.entry.layer.name + "&zoom=" + active.entry.layer.zoom + "&x=" + latLng.lng + "&y=" + latLng.lat + "&size=3", 
       function(data) {
         this.setState({ values: data.values, numCols: data.numCols }) 
        }.bind(this)

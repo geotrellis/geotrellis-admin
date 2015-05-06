@@ -19,12 +19,8 @@ var ValueGrid = React.createClass({
     };
   },
 
-//   componentWillReceiveProps: function(nextProps) {
-//     console.log('recieved props &&&', nextProps);
-//   this.setState({
-//     values : nextProps
-//   });
-// },
+
+
 	
 	render: function() {
 
@@ -39,37 +35,44 @@ var ValueGrid = React.createClass({
 	};
 
     var numCols = this.props.numCols;
+    var rows = [];
     var vals = this.props.values;
+    console.log('vals is ', vals);
 
-    var getMat = function(numCols, vals){
+    // var getMat = function(numCols, vals){
 
-    	var mat = [];
+    // 	var mat = [];
     	if(vals != null){
-    	for(var i = 0; i < numCols; i ++){
-    		var temp = [];
-    		for (var j = 0; j < numCols; j ++){
-    			if (vals[i] === "\"\""){
-    				temp.push( );
-    			}else{
-    				temp.push(vals[i]);    				
-    			}
-    		}
-    		mat.push(temp);
+    	for(var i = 0; i < vals.length; i ++){
+    		var row = Math.floor(i / numCols);
+            if(rows.length - 1 < row) { rows[row] = []; }
+            rows[row].push(vals[i].replace(/"/g, ""));
+
+            // //var temp = [];
+    		// //for (var j = 0; j < numCols; j ++){
+    		// 	if (vals[i] === "\"\""){
+    		// 		temp.push( );
+    		// 	}else{
+      //               console.log(vals[i]);
+    		// 		temp.push(vals[i]);    				
+    		// 	}
+    		// //}
+    		// mat.push(temp);
     	}
     	}
-    	return mat;
-    }
+    // 	return mat;
+    // }
 
-    var mat = getMat(numCols, vals);
+    //var mat = getMat(numCols, vals);
 
-    var gridTh = function(){
-    	return _.map(mat, function(val){
+    var gridTh = function(rowVals){
+    	return _.map(rowVals, function(val){
     	return <th style= {minHeight}>{val}</th>;
     })
     };
 
-    var gridTr = _.map(mat, function(vals){
-    	return <tr >{ gridTh(vals.length) }</tr>
+    var gridTr = _.map(rows, function(row){
+    	return <tr >{ gridTh(row) }</tr>
     });
     return (
     			<Table striped bordered condensed hover style = {css}>
