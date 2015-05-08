@@ -84,8 +84,8 @@ If you are using the vagrant.geotrellis repository to handle the cluster tasks, 
 
 ## Run Web Service
 
-7.  Return to gt-admin/viewer and run 
+Return to gt-admin/viewer and run 
   
   `grunt serve`
 
-8. Now execute run-server from the gt-admin root directory to display the newly-ingested tiles. 
+Now execute `./run-server.sh` from the gt-admin root directory to display the newly-ingested tiles. 
