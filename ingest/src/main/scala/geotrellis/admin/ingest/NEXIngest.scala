@@ -40,20 +40,8 @@ object NEXIngest extends ArgMain[AccumuloIngestArgs] with Logging {
     val layoutScheme = ZoomedLayoutScheme()
 
     def layerId(zoom: Int) = LayerId(args.layerName, zoom)
-/*
-    val save = { (rdd: RasterRDD[SpaceTimeKey], level: LayoutLevel) =>
-      accumulo.catalog.save(layerId(level.zoom), args.table, rdd, args.clobber)
-    }
-*/
-    //Sage wrote this part
     val writer = AccumuloRasterCatalog().writer[SpaceTimeKey](ZCurveKeyIndexMethod.byYear, args.table)
-/*
 
-    Ingest[ProjectedExtent, SpaceTimeKey](source, args.destCrs, layoutScheme, args.pyramid){ (rdd, level) => 
-      writer.write(LayerId(args.layerName, level.zoom), rdd)
-    }
-*/
-    //end
     // Get source tiles
     val inPath = args.inPath
     val updatedConf =
@@ -65,11 +53,6 @@ object NEXIngest extends ArgMain[AccumuloIngestArgs] with Logging {
         classOf[SpaceTimeInputKey],
         classOf[Tile]
       )
-/*
-    Ingest[SpaceTimeInputKey, SpaceTimeKey](source, args.destCrs, layoutScheme, args.pyramid){ (rdd, level) => 
-              accumulo.catalog.save(LayerId(args.layerName, level.zoom), args.table, rdd, args.clobber)
-    }
-*/
     
     Ingest[SpaceTimeInputKey, SpaceTimeKey](source, args.destCrs, layoutScheme, args.pyramid){ (rdd, level) => 
               writer.write(LayerId(args.layerName, level.zoom), rdd)

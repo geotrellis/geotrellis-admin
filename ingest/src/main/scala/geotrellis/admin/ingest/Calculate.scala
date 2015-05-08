@@ -26,16 +26,10 @@ object Calculate extends ArgMain[CalculateArgs] with Logging {
   def main(args: CalculateArgs): Unit = {
     implicit val sparkContext = SparkUtils.createSparkContext("Calculate")
 
-    // val accumulo = AccumuloInstance(args.instance, args.zookeeper, args.user, new PasswordToken(args.password))
-    // val catalog = accumulo.catalog
-    //sage making changes
-    //val catalog: HadoopCatalog = HadoopCatalog(sparkContext, new Path("hdfs://localhost/catalog"))
 
     val catalog = HadoopRasterCatalog(new Path("hdfs://localhost/catalog"))
     val rdd = catalog.reader[SpaceTimeKey].read(LayerId(args.inputLayer, 2))
     
-    //done
-    //done
     val ret = rdd
       .mapKeys { key => key.updateTemporalComponent(key.temporalKey.time.withMonthOfYear(1).withDayOfMonth(1).withHourOfDay(0)) }
       .averageByKey
