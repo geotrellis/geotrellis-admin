@@ -2,9 +2,11 @@ package geotrellis.admin.ingest
 
 import geotrellis.spark._
 import geotrellis.spark.ingest._
+import geotrellis.spark.cmd.args.AccumuloArgs
 import geotrellis.spark.ingest.NetCDFIngestCommand._
 import geotrellis.spark.tiling._
 import geotrellis.spark.io.accumulo._
+import geotrellis.spark.io.index._
 import geotrellis.spark.cmd.args._
 import geotrellis.spark.io.hadoop._
 import geotrellis.spark.utils.SparkUtils
@@ -15,7 +17,6 @@ import org.apache.accumulo.core.client.security.tokens.PasswordToken
 import org.apache.spark._
 import com.quantifind.sumac.ArgMain
 import com.github.nscala_time.time.Imports._
-
 /** Ingests the chunked NEX GeoTIFF data */
 object NEXIngest extends ArgMain[AccumuloIngestArgs] with Logging {
   def main(args: AccumuloIngestArgs): Unit = {
@@ -35,14 +36,11 @@ object NEXIngest extends ArgMain[AccumuloIngestArgs] with Logging {
       Tiler(getExtent, createKey)
     }
 
-    val accumulo = AccumuloInstance(args.instance, args.zookeeper, args.user, new PasswordToken(args.password))
+    implicit val accumulo = AccumuloInstance(args.instance, args.zookeeper, args.user, new PasswordToken(args.password))
     val layoutScheme = ZoomedLayoutScheme()
 
     def layerId(zoom: Int) = LayerId(args.layerName, zoom)
-
-    val save = { (rdd: RasterRDD[SpaceTimeKey], level: LayoutLevel) =>
-      accumulo.catalog.save(layerId(level.zoom), args.table, rdd, args.clobber)
-    }
+    val writer = AccumuloRasterCatalog().writer[SpaceTimeKey](ZCurveKeyIndexMethod.byYear, args.table)
 
     // Get source tiles
     val inPath = args.inPath
@@ -55,10 +53,9 @@ object NEXIngest extends ArgMain[AccumuloIngestArgs] with Logging {
         classOf[SpaceTimeInputKey],
         classOf[Tile]
       )
-
-    Ingest[SpaceTimeInputKey, SpaceTimeKey](source, args.destCrs, layoutScheme, args.pyramid){ (rdd, level) => 
-              accumulo.catalog.save(LayerId(args.layerName, level.zoom), args.table, rdd, args.clobber)
-    }
     
+    Ingest[SpaceTimeInputKey, SpaceTimeKey](source, args.destCrs, layoutScheme, args.pyramid){ (rdd, level) => 
+              writer.write(LayerId(args.layerName, level.zoom), rdd)
+    }
   }
 }
