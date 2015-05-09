@@ -6,8 +6,11 @@ import geotrellis.spark.cmd.args.AccumuloArgs
 import geotrellis.spark.io.hadoop._
 import geotrellis.spark.io.accumulo._
 import geotrellis.spark.io.index._
+import geotrellis.spark.io.json._
+import geotrellis.spark.op.stats._
 import geotrellis.spark.tiling._
 import geotrellis.spark.utils.SparkUtils
+import geotrellis.raster.io.json._
 import geotrellis.vector._
 import geotrellis.proj4._
 import org.apache.accumulo.core.client.security.tokens.PasswordToken
@@ -37,11 +40,13 @@ object AccumuloIngestCommand extends ArgMain[AccumuloIngestArgs] with Logging {
 
     val source = sparkContext.hadoopGeoTiffRDD(args.inPath).repartition(args.partitions)
     val layoutScheme = ZoomedLayoutScheme(256)
-
-    val writer = AccumuloRasterCatalog().writer[SpatialKey](RowMajorKeyIndexMethod, args.table)
+    val catalog = AccumuloRasterCatalog()
+    val writer = catalog.writer[SpatialKey](RowMajorKeyIndexMethod, args.table)
 
     Ingest[ProjectedExtent, SpatialKey](source, args.destCrs, layoutScheme, args.pyramid){ (rdd, level) => 
-      writer.write(LayerId(args.layerName, level.zoom), rdd)
+      val layerId = LayerId(args.layerName, level.zoom)
+      catalog.attributeStore.write(layerId, "histogram", rdd.histogram)
+      writer.write(layerId, rdd)
     }
   }
 }

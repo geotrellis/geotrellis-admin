@@ -256,46 +256,45 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
   def valueRoute = cors {
     import DefaultJsonProtocol._
     import org.apache.spark.SparkContext._
-    path("valuegrid") {
-      get{
-        parameters(
-          'layer,
-          'zoom.as[Int],
-          'x.as[Double],
-          'y.as[Double],
-          'size.as[Int]
-        ) { (layer, zoom, x, y, size) =>
-          val layerId = LayerId(layer, zoom)
-          val meta = metaDatas(layerId)
-          val clickPoint = Point(x, y).reproject(LatLng, meta.rasterMetaData.crs)
-          val rmd = meta.rasterMetaData
-          val spatialKey = rmd.mapTransform(clickPoint)
-          val tile = catalog.readTile[SpatialKey](layerId).read(spatialKey)
-          val tileExtent = rmd.mapTransform(spatialKey)
 
-          val rasterExtent = RasterExtent(tileExtent, tile.cols, tile.rows)
-          val (col, row) = rasterExtent.mapToGrid(clickPoint.x, clickPoint.y)
+    get{
+      parameters(
+        'layer,
+        'zoom.as[Int],
+        'x.as[Double],
+        'y.as[Double],
+        'size.as[Int]
+      ) { (layer, zoom, x, y, size) =>
+        val layerId = LayerId(layer, zoom)
+        val meta = metaDatas(layerId)
+        val clickPoint = Point(x, y).reproject(LatLng, meta.rasterMetaData.crs)
+        val rmd = meta.rasterMetaData
+        val spatialKey = rmd.mapTransform(clickPoint)
+        val tile = catalog.readTile[SpatialKey](layerId).read(spatialKey)
+        val tileExtent = rmd.mapTransform(spatialKey)
+
+        val rasterExtent = RasterExtent(tileExtent, tile.cols, tile.rows)
+        val (col, row) = rasterExtent.mapToGrid(clickPoint.x, clickPoint.y)
 
 
-          val values = mutable.ListBuffer[String]()
+        val values = mutable.ListBuffer[String]()
 
-          cfor(row - size)(_ <= row + size, _ + 1) { row =>
-            cfor(col - size)(_ <= col + size, _ + 1) { col =>
-              if(0 <= col && col <= tile.cols && 0 <= row && row <= tile.rows) {
-                values += "\"%.2f\"".format(tile.getDouble(col,row))
-              } else {
-                values += "\"\""
-              }
+        cfor(row - size)(_ <= row + size, _ + 1) { row =>
+          cfor(col - size)(_ <= col + size, _ + 1) { col =>
+            if(0 <= col && col <= tile.cols && 0 <= row && row <= tile.rows) {
+              values += "\"%.2f\"".format(tile.getDouble(col,row))
+            } else {
+              values += "\"\""
             }
           }
-          val valLen = values.length;
-          complete{
-            JsObject(
-              "success" -> JsString("1"),
-              "values" -> (values.toVector).toJson,
-              "numCols" -> JsNumber(size * 2 + 1)
-            )
-          }
+        }
+        val valLen = values.length;
+        complete{
+          JsObject(
+            "success" -> JsString("1"),
+            "values" -> (values.toVector).toJson,
+            "numCols" -> JsNumber(size * 2 + 1)
+          )
         }
       }
     }
