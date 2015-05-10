@@ -13,10 +13,14 @@ var _     = require("underscore");
 var MapServices = React.createClass({
    getInitialState: function() {
     $.get(this.props.url + "/colors/",
-      function(colors) { 
+      function(result) {
+        for(var i = 0; i < result.colors.length; i += 1) {
+          if(result.colors[i].key == "blue-to-yellow-to-red-heatmap") { break; }
+        }
+
         if (this.isMounted()) { 
-          this.setState({'colorMap': colors.colors.colors})
-          this.setState({'currentRamp': colors.colors.colors[0].image})
+          this.setState({'colorMap': result.colors})
+          this.setState({'currentRamp': result.colors[i].image})
         }
       }.bind(this)
     );

@@ -112,7 +112,7 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
                 }
 
               val colorRamp: ColorRamp =
-                colorOption.flatMap(ColorRampMap.get(_)).getOrElse(ColorRamps.LightToDarkGreen)
+                colorOption.flatMap(ColorRampMap.get(_)).getOrElse(ColorRamps.HeatmapBlueToYellowToRedSpectrum)
 
               breaksOption match {
                 case Some(breaks) =>
@@ -130,7 +130,7 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
     import DefaultJsonProtocol._
     get {
       complete {
-        JsObject("colors" -> ColorRampMap.getJson.parseJson)
+        ColorRampMap.getJson.parseJson.asJsObject
       }
     }
   }
