@@ -6,6 +6,7 @@
 
 var React = require('react');
 var LeafletMap = require('./LeafletMap.jsx');
+var MapServices = require('./MapServices.jsx')
 var Catalog = require('./Catalog.jsx');
 var Input = require("react-bootstrap/Input");
 var TabbedArea = require("react-bootstrap/TabbedArea");
@@ -16,7 +17,6 @@ var $ = require('jquery');
 
 var RasterViewer = React.createClass({
   getInitialState: function() {
-
     return { 
       url: "http://localhost:8088",
       catalog: [],      
@@ -43,10 +43,10 @@ var RasterViewer = React.createClass({
   render: function() { 
     var self = this;
     var cursor = Cursor.build(this);
-    console.log('Active Layer', this.state.active.entry, this.state.active.band);
     return (
-      <div className="row">
+      <div className="row">      
         <div className="col-md-9">
+          <MapServices catalog={this.state.catalog} url={this.state.url} active={cursor.refine('active')} />
           <LeafletMap tmsUrl={this.state.url + "/tms"} active={this.state.active} /> 
         </div>
 

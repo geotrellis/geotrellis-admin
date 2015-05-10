@@ -60,7 +60,7 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
   /** Server out TMS tiles for some layer */
   def tmsRoute =
     pathPrefix(Segment / IntNumber / IntNumber / IntNumber) { (layer, zoom, x, y) =>
-      parameters('time.?, 'breaks.?) { (timeOption, breaksOption) =>
+      parameters('time.?, 'breaks.?, 'colorRamp.?) { (timeOption, breaksOption, colorOption) =>
         respondWithMediaType(MediaTypes.`image/png`) {
           complete {
             future {
@@ -103,17 +103,20 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
                           }
 
                         largerTile.resample(sourceExtent, RasterExtent(targetExtent, 256, 256))
+                      case None =>
+                        sys.error(s"$layerId not found in catalog.")
                     }
                   } else {
                     sys.error("No zoom level for this layer.")
                   }
                 }
 
+              val colorRamp: ColorRamp =
+                colorOption.flatMap(ColorRampMap.get(_)).getOrElse(ColorRamps.HeatmapBlueToYellowToRedSpectrum)
 
               breaksOption match {
                 case Some(breaks) =>
-                  if(layer == "diff") tile.renderPng(ColorRamps.LightToDarkGreen, breaks.split(",").map(_.toInt)).bytes
-                  else tile.renderPng(ColorRamps.BlueToOrange, breaks.split(",").map(_.toInt)).bytes
+                  tile.renderPng(colorRamp, breaks.split(",").map(_.toInt)).bytes
                 case None =>
                   tile.renderPng.bytes
               }
@@ -122,6 +125,15 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
         }
       }
     }
+
+  def colorRoute = cors {
+    import DefaultJsonProtocol._
+    get {
+      complete {
+        ColorRampMap.getJson.parseJson.asJsObject
+      }
+    }
+  }
 
   def catalogRoute = cors {
     path("") {
@@ -250,6 +262,7 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
   def root = {
     pathPrefix("catalog") { catalogRoute } ~
     pathPrefix("tms") { tmsRoute } ~
+    pathPrefix("colors") { colorRoute } ~
     pixelRoute
   }
 
