@@ -51,7 +51,26 @@ var LeafletMap = React.createClass({
   layer: null,
 
   getInitialState: function () {
-    return {'value' : 0.5}
+    return {'value' : 0.5,
+            values : [],
+      numCols : null
+  };
+  },
+
+  valuegrid: function(e){
+    var active = this.props.active; 
+    
+    var entry = active.entry;
+    var entries = this.props.entries;
+
+    var mousePoint = this.map.mouseEventToLayerPoint(e);
+    var latLng = this.map.layerPointToLatLng(mousePoint);
+    $.get(this.props.Url + "/valuegrid?layer=" + active.entry.layer.name + "&zoom=" + active.entry.layer.zoom + "&x=" + latLng.lng + "&y=" + latLng.lat + "&size=3", 
+      function(data) {
+        this.setState({ mapClick: true, values: data.values, numCols: data.numCols }); 
+        this.props.onClick(this);
+       }.bind(this)
+    );
   },
 
   componentDidMount: function () {    
@@ -125,8 +144,11 @@ var LeafletMap = React.createClass({
     this.layer.setUrl(tmsUrl + "&" + $.param(args));
   },
 
-  render: function() {     
-    if (this.isMounted() && this.props.active.entry) {      
+  render: function() { 
+
+
+    if (this.isMounted() && this.props.active.entry) { 
+           
       this.handleUpdateLayer();
     } 
 
@@ -138,12 +160,12 @@ var LeafletMap = React.createClass({
                'padding-top' : '5px'};
     
     return (
-      <div>
+      <div >
         <div style={css}>
           <Slider id="opacity-slider" min={0} max={1} step={0.02} value={this.state.value} toolTip={false} onSlide={this.handleOpacityUpdate}/>
         </div>
         <div>
-          <div className="leafletMap" id="map"/>
+          <div mapClick={this.state.mapClick} className="leafletMap" id="map" values = {this.state.values} numCols = {this.state.numCols} onClick={this.valuegrid}/>
         </div>
       </div>
     );
