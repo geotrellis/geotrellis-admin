@@ -1,24 +1,20 @@
 package geotrellis.admin.ingest
 
 import geotrellis.spark._
-import geotrellis.spark.ingest._
 import geotrellis.spark.io.hadoop._
 import geotrellis.raster._
 import geotrellis.raster.io.geotiff.reader._
 import geotrellis.vector._
 import geotrellis.proj4._
+import geotrellis.raster.io.geotiff._
 
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.fs.FSDataInputStream
-
 import org.apache.hadoop.mapreduce.InputSplit
 import org.apache.hadoop.mapreduce.JobContext
 import org.apache.hadoop.mapreduce.RecordReader
 import org.apache.hadoop.mapreduce.TaskAttemptContext
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat
 import org.apache.hadoop.mapreduce.lib.input.FileSplit
-
-import java.nio.ByteBuffer
 
 import com.github.nscala_time.time.Imports._
 
@@ -50,12 +46,9 @@ class InputTileRecordReader extends RecordReader[SpaceTimeInputKey, Tile] {
     val conf = context.getConfiguration()
     val bytes = HdfsUtils.readBytes(path, conf)
 
-    val gt = GeoTiffReader.read(bytes)
-    val meta = gt.tags
-    val isoString = meta("ISO_TIME")
+    val SingleBandGeoTiff(tile, extent, crs, tags) = GeoTiffReader.readSingleBand(bytes)
+    val isoString = tags.headTags("ISO_TIME")
     val dateTime = DateTime.parse(isoString)
-    val GeoTiffBand(tile, extent, crs, _) =
-      gt.bands.head
 
     tup = (SpaceTimeInputKey(extent, crs, dateTime), tile)
   }
