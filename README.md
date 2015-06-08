@@ -76,7 +76,7 @@ Navigate to gt-admin/viewer to initialize web service functionality. This is acc
 
 Now navigate to the gt-admin project root directory to prepare GeoTrellis to ingest by running:
 
-   `./sbt "project ingest" assembly`
+   `./sbt assembly`
 
 To begin ingest of raster data, modify `gt-admin/ingest-spatial.sh` to reference your data file by setting the `INPUT` variable.
   
