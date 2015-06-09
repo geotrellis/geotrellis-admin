@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 ### INGEST SPATIAL GEOTIFF IN ACCUMULO ###
  
 # geotrellis-spark JAR. Shouldn't have to change this one if running in the root folder (remember to run ./sbt "project spark" assembly)
