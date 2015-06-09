@@ -1,15 +1,14 @@
-package geotrellis.spark
+package geotrellis
 
+import geotrellis.spark._
+import geotrellis.spark.ingest.{Reproject, Tiler}
 import geotrellis.vector._
 import geotrellis.raster._
-import geotrellis.raster.reproject._
 import geotrellis.proj4.CRS
 import org.apache.spark.rdd._
 import monocle.syntax._
-import geotrellis.spark._
-import spire.syntax.cfor._
 
-package object ingest {
+package object admin {
   type Tiler[T, K] = (RDD[(T, Tile)], RasterMetaData) => RasterRDD[K]
   type IngestKey[T] = KeyComponent[T, ProjectedExtent]
 
