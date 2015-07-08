@@ -2,8 +2,7 @@ package geotrellis.admin.server
 
 import spray.http.HttpHeaders._
 import spray.http.HttpMethods._
-import spray.http.{ AllOrigins, MediaTypes }
-import spray.http.{ HttpMethods, HttpMethod, HttpResponse, AllOrigins }
+import spray.http.AllOrigins
 import spray.routing._
 
 trait CorsSupport { self: HttpService =>

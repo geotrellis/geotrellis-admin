@@ -5,7 +5,6 @@ import com.github.nscala_time.time.Imports._
 import com.quantifind.sumac.{ ArgApp, ArgMain }
 import geotrellis.proj4._
 import geotrellis.raster._
-import geotrellis.raster.io.geotiff.Nodata
 import geotrellis.raster.render._
 import geotrellis.raster.histogram._
 import geotrellis.raster.io.json._

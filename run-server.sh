@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 JAR=server/target/scala-2.10/gt-admin-server-assembly-0.1.0-SNAPSHOT.jar
 
 zip -d $JAR META-INF/ECLIPSEF.RSA

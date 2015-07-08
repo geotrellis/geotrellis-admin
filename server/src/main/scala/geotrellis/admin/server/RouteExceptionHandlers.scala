@@ -1,9 +1,6 @@
 package geotrellis.admin.server
 
-
 import spray.http.StatusCodes
-import spray.httpx.SprayJsonSupport._
-import spray.routing.Directive._
 import spray.routing.{ExceptionHandler, HttpService}
 import spray.util.LoggingContext
 

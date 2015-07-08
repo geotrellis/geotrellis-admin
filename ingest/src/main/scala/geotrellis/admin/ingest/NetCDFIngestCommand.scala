@@ -2,22 +2,23 @@ package geotrellis.admin.ingest
 
 import geotrellis.spark._
 import geotrellis.spark.ingest._
-import geotrellis.spark.ingest.NetCDFIngestCommand._
 import geotrellis.spark.tiling._
-import geotrellis.spark.ingest._
+import geotrellis.spark.io.accumulo._
+import geotrellis.spark.io.index._
 import geotrellis.spark.io.hadoop._
 import geotrellis.spark.io.hadoop.formats.NetCdfBand
-import geotrellis.spark.io.index._
 import geotrellis.spark.utils.SparkUtils
+
 import org.apache.accumulo.core.client.security.tokens.PasswordToken
 import org.apache.spark._
+
 import com.quantifind.sumac.ArgMain
 
 /**
  * Ingests raw multi-band NetCDF tiles into a re-projected and tiled RasterRDD
  */
-object NetCDFIngestHDFSCommand extends ArgMain[HadoopIngestArgs] with Logging {
-  def main(args: HadoopIngestArgs): Unit = {
+object NetCDFIngestCommand extends ArgMain[AccumuloIngestArgs] with Logging {
+  def main(args: AccumuloIngestArgs): Unit = {
     System.setProperty("com.sun.media.jai.disableMediaLib", "true")
 
     implicit val sparkContext = SparkUtils.createSparkContext("Ingest")
@@ -32,14 +33,15 @@ object NetCDFIngestHDFSCommand extends ArgMain[HadoopIngestArgs] with Logging {
       Tiler(getExtent, createKey)
     }
 
-    val catalog = HadoopRasterCatalog(args.catalogPath)
+    implicit val accumulo = AccumuloInstance(args.instance, args.zookeeper, args.user, new PasswordToken(args.password))
+
     val source = sparkContext.netCdfRDD(args.inPath)
     val layoutScheme = ZoomedLayoutScheme()
 
-    Ingest[NetCdfBand, SpaceTimeKey](source, args.destCrs, layoutScheme, args.pyramid, true) { (rdd, level) => 
-      catalog
-        .writer[SpaceTimeKey](ZCurveKeyIndexMethod.byYear, args.clobber)
-        .write(LayerId(args.layerName, level.zoom), rdd)
+    val writer = AccumuloRasterCatalog().writer[SpaceTimeKey](ZCurveKeyIndexMethod.byYear, args.table)
+        
+    Ingest[NetCdfBand, SpaceTimeKey](source, args.destCrs, layoutScheme, args.pyramid) { (rdd, level) =>  
+      writer.write(LayerId(args.layerName, level.zoom), rdd)
     }
   }
 }

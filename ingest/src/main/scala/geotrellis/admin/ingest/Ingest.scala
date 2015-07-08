@@ -16,20 +16,12 @@
 
 package geotrellis.admin.ingest
 
-import geotrellis.raster._
-
-import geotrellis.raster.reproject._
-import geotrellis.vector._
-import geotrellis.vector.reproject._
-import geotrellis.proj4._
-
 import geotrellis.spark._
 import geotrellis.spark.ingest._
 import geotrellis.spark.tiling._
 import geotrellis.raster._
 import geotrellis.proj4._
 import org.apache.spark.rdd._
-import org.apache.spark.storage.StorageLevel
 import scala.reflect.ClassTag
 
 object Ingest {
@@ -50,7 +42,7 @@ object Ingest {
    *
    * @param sourceTiles   RDD of tiles that have Extent and CRS
    * @param destCRS       CRS to be used by the output layer
-   * @param LayoutScheme  LayoutScheme to be used by output layer
+   * @param layoutScheme  LayoutScheme to be used by output layer
    * @param pyramid       Pyramid up to level 1, sink function will be called for each level
    * @param isUniform     Flag that all input tiles share an the same extent (optimization)
    * @param tiler         Tiler that can understand the input and out keys (implicit)

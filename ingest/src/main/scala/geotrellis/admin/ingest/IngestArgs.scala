@@ -1,11 +1,11 @@
 package geotrellis.admin.ingest
 
-import  geotrellis.spark.cmd.args._
+import geotrellis.proj4.CRS
+
 import com.quantifind.sumac.FieldArgs
 import com.quantifind.sumac.validation.Required
-import geotrellis.proj4.CRS
-import org.apache.hadoop.fs._
 
+import org.apache.hadoop.fs._
 
 trait IngestArgs extends FieldArgs {
   /** Hadoop url for layer file or directory (file, hdfs, s3n, ..) */
