@@ -27,7 +27,7 @@ object Calculate extends ArgMain[CalculateArgs] with Logging {
 
 
     val catalog = HadoopRasterCatalog(new Path("hdfs://localhost/catalog"))
-    val rdd = catalog.reader[SpaceTimeKey].read(LayerId(args.inputLayer, 2))
+    val rdd = catalog.read[SpaceTimeKey](LayerId(args.inputLayer, 2))
     
     val ret = rdd
       .mapKeys { key => key.updateTemporalComponent(key.temporalKey.time.withMonthOfYear(1).withDayOfMonth(1).withHourOfDay(0)) }
