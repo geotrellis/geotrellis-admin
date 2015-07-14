@@ -21,27 +21,27 @@ Running a GeoTrellis-Spark cluster will require the following dependencies be in
 [HDFS](https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsUserGuide.html) is a distributed file system, designed to be run on multiple hardware architectures. This forms the basis of storage for GeoTrellis raster data storage, upon which the remaining services build
 
 #### Apache ZooKeeper
-[Zookeeper](http://zookeeper.apache.org/) is a distributed filesystem centralized service, maintaining and configuring HDFS data. This functionality includes naming, synchronization, and various group services.
+[ZooKeeper](http://zookeeper.apache.org/) is a distributed filesystem centralized service, maintaining and configuring HDFS data. This functionality includes naming, synchronization, and various group services.
 
 #### Apache Accumulo
-[Accumulo](https://accumulo.apache.org) is a high-performance data storage and retrieval system, using a distributed key/value store. The application is built on top of Hadoop and Zookeeper.
+[Accumulo](https://accumulo.apache.org) is a high-performance data storage and retrieval system, using a distributed key/value store. The application is built on top of Hadoop and ZooKeeper.
 
 #### Spark
 [Spark](http://spark.apache.org/) provides the processing engine upon which GeoTrellis ingests and renders raster objects.
 
 ### Scala, Java, and SBT
-[Scala](http://scala-lang.org) is a hybrid language with both ojbect-oriented and functional characteristics. Because Scala runs on the JVM, Java is required to run Scala and its build tool, sbt. 
+[Scala](http://scala-lang.org) is a hybrid language with both object-oriented and functional characteristics. Because Scala runs on the JVM, Java is required to run Scala and its build tool, sbt. 
 
 # Getting Started
 
 ## Initialization
 
-Install and configure your Geotrellis Cluster following instructions in the GeoTrellis, vagrant.geotrellis, or geotrellis-ec2-cluster repositories.
+Install and configure your GeoTrellis Cluster following instructions in the GeoTrellis, vagrant.geotrellis, or geotrellis-ec2-cluster repositories.
 
 You should be able to verify that your services are running properly on the following ports:
   * HDFS: http://localhost:50070
   * Accumulo: http://localhost:5095
-  * Zookeeper: http://localhost:2181
+  * ZooKeeper: http://localhost:2181
   
 Once all services are running on the specified ports, clone this repository alongside the GeoTrellis repository.
      
@@ -58,7 +58,7 @@ To run gt-admin, you must first prepare the GeoTrellis cluster for service reque
   ./publish-local.sh
   ```
 
-These commands will assemble the scala code and publish snapshots to your local machine for gt-admin to use.
+These commands will assemble the Scala code and publish snapshots to your local machine for gt-admin to use.
  
 ## Setup Web Service
 
@@ -66,11 +66,11 @@ Navigate to gt-admin/viewer to initialize web service functionality. This is acc
    
    `npm install`
 
-   Render the inital page for gt-admin run:
+   Render the initial page for gt-admin run:
 
    `grunt serve`
 
-   You may interrupt this process now by signalling with `Ctrl-C` in the terminal to begin ingest.
+   You may interrupt this process now by signaling with `Ctrl-C` in the terminal to begin ingest.
 
 ## Project Ingest
 
