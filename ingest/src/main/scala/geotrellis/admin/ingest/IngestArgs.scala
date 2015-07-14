@@ -14,7 +14,7 @@ trait IngestArgs extends FieldArgs {
   /** Layer name to be used in the catalog */
   @Required var layerName: String = _
   
-  /** Reproject the layre to this CRS  */
+  /** Reproject the layer to this CRS  */
   var crs: String = "EPSG:4326"
 
   /** Pyramid the layer from determined zoom level (based on resolution) to zoom level 1  */
@@ -23,7 +23,7 @@ trait IngestArgs extends FieldArgs {
   /** Clobber layer if it already exists in the catalog */
   var clobber: Boolean = false
   
-  /** Partition the records imediatly after input, before ingest.
+  /** Partition the records immediately after input, before ingest.
    * In case of input being a single file this has dramatic impacts on performance. */
   var partitions: Int = 24
 
