@@ -2,17 +2,17 @@ package geotrellis.admin.server
 
 import akka.actor.ActorSystem
 import com.github.nscala_time.time.Imports._
-import com.quantifind.sumac.{ ArgApp, ArgMain }
+import com.quantifind.sumac.ArgApp
 import geotrellis.proj4._
 import geotrellis.raster._
 import geotrellis.raster.render._
+import geotrellis.raster.resample._
 import geotrellis.raster.histogram._
 import geotrellis.raster.io.json._
 import geotrellis.spark._
 import geotrellis.spark.cmd.args._
 import geotrellis.spark.io._
 import geotrellis.spark.io.accumulo._
-import geotrellis.spark.io.hadoop._
 import geotrellis.spark.io.json._
 import geotrellis.spark.tiling._
 import geotrellis.spark.utils.SparkUtils
@@ -21,11 +21,11 @@ import geotrellis.vector.reproject._
 import org.apache.accumulo.core.client.security.tokens.PasswordToken
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
-import spray.http.{MediaTypes }
+import spray.http.MediaTypes
 import spray.httpx.SprayJsonSupport._
 import spray.json._
+import spray.json.DefaultJsonProtocol._
 import spray.routing._
-
 
 class CatalogArgs extends AccumuloArgs
 
@@ -72,9 +72,9 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
                     case Some(timeStr) =>
                       val time = DateTime.parse(timeStr)
 
-                      catalog.readTile[SpaceTimeKey](layerId).read(SpaceTimeKey(x, y, time))
+                      catalog.tileReader[SpaceTimeKey](layerId).read(SpaceTimeKey(x, y, time))
                     case None =>
-                      catalog.readTile[SpatialKey](layerId).read(SpatialKey(x, y))
+                      catalog.tileReader[SpatialKey](layerId).read(SpatialKey(x, y))
                   }
                 } else {
                   val z = zooms.max
@@ -96,9 +96,9 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
                           timeOption match {
                             case Some(timeStr) =>
                               val time = DateTime.parse(timeStr)
-                              catalog.readTile[SpaceTimeKey](layerId).read(SpaceTimeKey(nx, ny, time))
+                              catalog.tileReader[SpaceTimeKey](layerId).read(SpaceTimeKey(nx, ny, time))
                             case None =>
-                              catalog.readTile[SpatialKey](layerId).read(SpatialKey(nx, ny))
+                              catalog.tileReader[SpatialKey](layerId).read(SpatialKey(nx, ny))
                           }
 
                         largerTile.resample(sourceExtent, RasterExtent(targetExtent, 256, 256))
@@ -111,7 +111,7 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
                 }
 
               val colorRamp: ColorRamp =
-                colorOption.flatMap(ColorRampMap.get(_)).getOrElse(ColorRamps.HeatmapBlueToYellowToRedSpectrum)
+                colorOption.flatMap(ColorRampMap.get).getOrElse(ColorRamps.HeatmapBlueToYellowToRedSpectrum)
 
               breaksOption match {
                 case Some(breaks) =>
@@ -171,18 +171,18 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
           case 1 =>
             candidates.toList.head._2
           case _ =>
-            throw new MultipleMatchError(layer)
+            throw new CatalogError(s"Multiple layers match $layer")
         }
       }
       val md = layerMetaData.rasterMetaData
         (path("bands") & get) {
-        import DefaultJsonProtocol._
-        complete{ 
+
+        complete{
           future {
             val bands = {
               val GridBounds(col, row, _, _) = md.mapTransform(md.extent)
-              val filters = new FilterSet[SpaceTimeKey]() withFilter SpaceFilter(GridBounds(col, row, col, row))
-              catalog.reader[SpaceTimeKey].read(layer, filters).map {
+              val filters = new RasterRDDQuery[SpaceTimeKey].where(Intersects(GridBounds(col, row, col, row)))
+              catalog.read[SpaceTimeKey](layer, filters).map {
                 case (key, tile) => key.temporalKey.time.toString
               }
             }.collect
@@ -215,7 +215,8 @@ object CatalogService extends ArgApp[CatalogArgs] with SimpleRoutingApp with Cor
 
           val p = Point(x, y).reproject(LatLng, crs)
           val key = md.mapTransform(p)
-          val rdd = catalog.reader[SpaceTimeKey].read(layer, FilterSet(SpaceFilter[SpaceTimeKey](key.col, key.row)))
+          val filters = new RasterRDDQuery[SpaceTimeKey].where(Intersects(GridBounds(key.col, key.row, key.col, key.row)))
+          val rdd = catalog.read[SpaceTimeKey](layer, filters)
           val bcMetaData = rdd.sparkContext.broadcast(rdd.metaData)
 
           def createCombiner(value: Double): (Double, Double) =
