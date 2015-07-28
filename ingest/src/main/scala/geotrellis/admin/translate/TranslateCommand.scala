@@ -10,7 +10,7 @@ trait TranslateArgs extends FieldArgs {
   var files: Seq[File] = Seq.empty
 
   /** Ignored extensions in files. */
-  var ignored: Seq[String] = Seq.empty
+  var ignoredExtensions: Seq[String] = Seq.empty
 
 }
 
@@ -23,7 +23,7 @@ trait TranslateCommand[A <: TranslateArgs] extends ArgMain[A] {
   def main(args: A): Unit = {
     if (args.files.isEmpty) println(help)
     else {
-      for (file <- flattenFiles(args.files, args.ignored)) {
+      for (file <- flattenFiles(args.files, args.ignoredExtensions)) {
         try translate(file, args)
         catch {
           case exception: Throwable =>

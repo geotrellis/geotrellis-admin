@@ -15,17 +15,17 @@ class ARGToGeoTiffArgs extends TranslateArgs {
   /** CRS argument, if not specified it will check this metadata in the json file. */
   var CRS: Option[String] = None
 
-  ignored = Seq("arg")
+  ignoredExtensions = Seq("arg")
 
 }
 
 /** Translate ARG format to GeoTiff format according to its json metadata. */
 object ARGToGeoTiff extends TranslateCommand[ARGToGeoTiffArgs] {
 
-  override val help =
+  val help =
     s"""
        | Convert from Azavea Raster Grid format to single band GeoTiff LatLong.
-       | File keep the same name but change their extensions.
+       | Files keep the same name but change their extensions.
        | The CRS will be checked in metadata (EPSG code) if not given.
        | File must the json file containg the ARG metadatas.
        |
@@ -34,16 +34,17 @@ object ARGToGeoTiff extends TranslateCommand[ARGToGeoTiffArgs] {
        | ARG documentation: http://geotrellis.io/documentation/0.9.0/geotrellis/io/arg/
        """.stripMargin
 
-  override def translate(file: File, args: ARGToGeoTiffArgs): Unit = {
+  def translate(file: File, args: ARGToGeoTiffArgs): Unit = {
 
     val path = file.getAbsolutePath
     require(path.endsWith("json"), "you must give the json metadata file")
     val argPath = changeExtension(path, "json", "tiff")
 
-    val json = ConfigFactory.parseString(Filesystem.readText(path))
     val crs = CRS.fromName(args.CRS match {
       case Some(crsName) => crsName
-      case None => "EPSG:"+json.getString("epsg")
+      case None =>
+        val json = ConfigFactory.parseString(Filesystem.readText(path))
+        "EPSG:"+json.getString("epsg")
     })
 
     val Raster(tile, extent) = ArgReader.read(path).reproject(crs, LatLng)
