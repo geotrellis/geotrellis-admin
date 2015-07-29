@@ -103,11 +103,13 @@ object Build extends Build {
       name := "gt-admin-ingest",
       organization := "com.azavea",
       version := "0.1.0-SNAPSHOT",
+      resolvers += Resolver.sonatypeRepo("public"),
       libraryDependencies ++= {
         val akkaV = "2.3.9"
         val sprayV = "1.3.2"
         val geotrellisV = "0.10.0-SNAPSHOT"
         Seq(
+          "com.github.scopt" %% "scopt" % "3.3.0",
           "com.quantifind" %% "sumac" % "0.3.0",
  
           "org.slf4j"                 %   "slf4j-log4j12"   % "1.7.7",
