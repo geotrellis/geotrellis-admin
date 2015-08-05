@@ -61,7 +61,7 @@ object Ingest {
         rdd.cache()      
         sink(rdd, level)           
         free
-        var (nextRdd, nextLevel) = Pyramid.up(rdd, level, layoutScheme)   
+        val (nextLevel, nextRdd) = Pyramid.up(rdd, level, layoutScheme)
         // we must do it now so we can unerspist the source before recurse        
         sinkLevels(nextRdd, nextLevel){ rdd.unpersist(blocking = false) }
       }     

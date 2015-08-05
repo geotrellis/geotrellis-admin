@@ -3,7 +3,6 @@ package geotrellis.admin.ingest
 import geotrellis.raster.io.json._
 import geotrellis.spark._
 import geotrellis.spark.ingest._
-import geotrellis.spark.cmd.args.AccumuloArgs
 import geotrellis.spark.io.hadoop._
 import geotrellis.spark.io.accumulo._
 import geotrellis.spark.io.index._

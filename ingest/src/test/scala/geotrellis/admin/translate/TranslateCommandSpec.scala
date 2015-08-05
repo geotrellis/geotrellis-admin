@@ -7,15 +7,17 @@ import org.scalatest.{Matchers, FlatSpec}
 class TranslateCommandSpec extends FlatSpec with Matchers {
 
   val mockPath = "/test/command.json/all-set."
-  val mockCommand = new TranslateCommand[TranslateArgs] {
-    override val help = ""
-    override def translate(file: File, args: TranslateArgs): Unit = ()
+  val mockCommand = new TranslateCommand[ARGToGeoTiffConfig] {
+    val name = ""
+    val config = ARGToGeoTiffConfig()
+    val description = ""
+    def translate(file: File, args: ARGToGeoTiffConfig): Unit = ()
   }
 
   def testFile(name: String = ""): Seq[File] =
     Seq(new File(getClass.getResource(s"/translate/files/$name").getFile))
 
-  "changeExtension" should "change correctly it" ingit  {
+  "changeExtension" should "change correctly it" in  {
     val argPath = mockPath + "arg"
     val jsonPath = mockPath + "json"
     mockCommand.changeExtension(jsonPath, "json", "arg") should be (argPath)

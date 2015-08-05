@@ -103,7 +103,6 @@ object Build extends Build {
       name := "gt-admin-ingest",
       organization := "com.azavea",
       version := "0.1.0-SNAPSHOT",
-      resolvers += Resolver.sonatypeRepo("public"),
       libraryDependencies ++= {
         val akkaV = "2.3.9"
         val sprayV = "1.3.2"

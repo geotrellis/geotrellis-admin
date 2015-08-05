@@ -10,7 +10,6 @@ import geotrellis.raster.resample._
 import geotrellis.raster.histogram._
 import geotrellis.raster.io.json._
 import geotrellis.spark._
-import geotrellis.spark.cmd.args._
 import geotrellis.spark.io._
 import geotrellis.spark.io.accumulo._
 import geotrellis.spark.io.json._
