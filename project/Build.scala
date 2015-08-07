@@ -108,6 +108,7 @@ object Build extends Build {
         val sprayV = "1.3.2"
         val geotrellisV = "0.10.0-SNAPSHOT"
         Seq(
+          "com.github.scopt" %% "scopt" % "3.3.0",
           "com.quantifind" %% "sumac" % "0.3.0",
  
           "org.slf4j"                 %   "slf4j-log4j12"   % "1.7.7",
