@@ -1,0 +1,89 @@
+body {
+  padding: 0;
+  overflow: hidden;
+  font-family: helvetica, arial, sans-serif;
+}
+
+#time-window {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 1000;
+  background-color: white;
+  padding: 0px 10px 0px 10px;
+}
+
+#map {
+  position: absolute;
+  right: 0px;
+  left: 340px;
+  height: 100%;
+  top: 50px;
+}
+
+.sidebar {
+  position: absolute;
+  left: 0px;
+  width: 340px;
+  top: 50px;
+  bottom: 0;
+  overflow-y: auto;
+  padding: 20px;
+  padding-bottom: 60px;
+}
+
+.item {
+  padding: 10px;
+  background-color: #eee;
+}
+
+.item:not(:last-child) {
+  margin-bottom: 10px;
+}
+
+.item-heading {
+  font-size: 18px;
+  margin-top: 0;
+  font-weight: bold;
+}
+
+.sort {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 340px;
+  background-color: #fff;
+  padding: 20px;
+}
+
+.sort-option {
+  margin-left: 10px;
+}
+
+.sort-option.selected {
+  border-bottom: 1px solid #ccc;
+}
+
+.sidebar nav.navbar-default {
+  border: 0;
+  border-radius: 0;
+  background-color: #fff;
+  border-bottom: 1px solid #eee;
+  margin: -14px -20px 20px;
+  padding: 0 5px;
+}
+
+.navbar-brand {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.nav .top {
+  position: absolute;
+  top: 0;
+  height: 50px;
+}
+
+.topbar {
+  display: inline-block;
+}
