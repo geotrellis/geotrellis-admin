@@ -1,5 +1,4 @@
 package geotrellis.admin.client.facades
-//package chandu0101.scalajs.facades
 
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._

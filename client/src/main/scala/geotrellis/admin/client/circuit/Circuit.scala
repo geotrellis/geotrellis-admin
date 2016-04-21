@@ -36,18 +36,19 @@ class LayerHandler[M](modelRW: ModelRW[M, LayerModel]) extends ActionHandler(mod
       updated(value.copy(selection = None))
   }
 }
-class ColorBreakHandler[M](modelRW: ModelRW[M, ColorBreaksModel]) extends ActionHandler(modelRW) {
+class ColorBreaksHandler[M](modelRW: ModelRW[M, ColorBreaksModel]) extends ActionHandler(modelRW) {
   override def handle = {
     case RefreshBreaks =>
       effectOnly(Effect(Catalog.breaks.map { res =>
         val parsed = JSON.parse(res.responseText)
         val layers = decodeJs[Array[Double]](parsed)
+        println(parsed)
         UpdateBreaks(layers.getOrElse(Array()))
       }))
     case UpdateBreaks(breaks) =>
       updated(value.copy(breaks = Ready(breaks)))
     case SelectBreakCount(count) => {
-      updated(value.copy(breakCount = count))
+      updated(value.copy(breakCount = count), Effect.action(RefreshBreaks))
     }
   }
 }
@@ -68,6 +69,6 @@ object AppCircuit extends Circuit[RootModel] with ReactConnector[RootModel] {
   override protected val actionHandler = composeHandlers(
     new LayerHandler(zoomRW(_.layerM)((root, newVal) => root.copy(layerM = newVal))),
     new ColorRampHandler(zoomRW(_.colorM)((root, newVal) => root.copy(colorM = newVal))),
-    new ColorBreakHandler(zoomRW(_.breaksM)((root, newVal) => root.copy(breaksM = newVal)))
+    new ColorBreaksHandler(zoomRW(_.breaksM)((root, newVal) => root.copy(breaksM = newVal)))
   )
 }

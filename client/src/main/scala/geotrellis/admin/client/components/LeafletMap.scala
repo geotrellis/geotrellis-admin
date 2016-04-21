@@ -1,9 +1,16 @@
 package geotrellis.admin.client.components
 
+import diode.react.ReactPot._
+import diode._
+import diode.react._
+import diode.data.Pot
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.router._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import org.scalajs.dom
+
+import io.circe._
+import io.circe.scalajs._
 
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
@@ -11,17 +18,37 @@ import scala.scalajs.js.annotation.JSExport
 import scala.scalajs.js
 import scala.scalajs.js.Dynamic.{literal => json}
 import scala.scalajs.js.annotation.JSName
-import scala.scalajs.js.{UndefOr, undefined}
+import scala.scalajs.js._
+import js.JSConverters._
 
 import geotrellis.admin.client.facades._
+import geotrellis.admin.client.circuit._
 
 object LeafletMap {
+  var lmap: js.UndefOr[LMap] =
+    js.undefined
+
+  var gtLayer: js.UndefOr[LTileLayer] =
+    js.undefined
 
   val defaultMapOptions =
     LMapOptions
       .center(LLatLng(40.75583970971843, -73.795166015625))
-      .zoom(11)
+      .zoom(4)
       .result
+
+  def updateTile = Callback {
+    val urlTemplate = for {
+      lDescription <- AppCircuit.zoom(_.layerM.selection).value
+      cmapName <- AppCircuit.zoom(_.colorM.selection).value
+    } yield s"""http://0.0.0.0:8080/gt/tms/${lDescription.name}/{z}/{x}/{y}?colorRamp=${cmapName}&breaks=0,1,3,5,8,10,20,30,40,50,60,80,100,200"""
+
+    urlTemplate.map { template =>
+      if (!js.isUndefined(gtLayer)) lmap.get.removeLayer(gtLayer.get)
+      gtLayer = LTileLayer(template)
+      gtLayer.get.addTo(lmap.get)
+    }
+  }
 
   def tileLayerOpts(maxZoom: Int, attrib: String) =
     LTileLayerOptions
@@ -49,17 +76,13 @@ object LeafletMap {
     LTileLayer(url, tileLayerOpts(18, attrib));
   };
 
-  class Backend($: BackendScope[Unit, Unit]) {
-    var map: js.UndefOr[LMap] =
-      js.undefined
+  class Backend($: BackendScope[ModelProxy[RootModel], Unit]) {
 
     def init = Callback {
-      map = Leaflet.map("map", defaultMapOptions)
-      getLayer(layers("stamen")("toner_lite"), layers("stamen")("attrib")).addTo(map.get)
+      lmap = Leaflet.map("map", defaultMapOptions)
+      getLayer(layers("stamen")("toner_lite"), layers("stamen")("attrib")).addTo(lmap.get)
     }
 
-    def clear = Callback {
-    }
 
     def render() =
       <.div(
@@ -67,11 +90,12 @@ object LeafletMap {
       )
   }
 
-  private val leafletMap = ReactComponentB[Unit]("LeafletMap")
+  private val leafletMap = ReactComponentB[ModelProxy[RootModel]]("LeafletMap")
     .renderBackend[Backend]
     .componentDidMount(_.backend.init)
+    .componentDidUpdate(_ => updateTile)
     .build
 
-  def apply() = leafletMap()
+  def apply(props: ModelProxy[RootModel]) = leafletMap(props)
 }
 

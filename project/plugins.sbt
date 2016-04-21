@@ -5,7 +5,6 @@ addSbtPlugin("com.lihaoyi" % "workbench" % "0.2.3")
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.8")
 
 resolvers ++= Seq(
-  "twttr" at "https://maven.twttr.com/",
   "spray repo" at "http://repo.spray.io",
   "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
   Resolver.bintrayRepo("azavea", "maven"),

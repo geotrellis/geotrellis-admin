@@ -1,5 +1,4 @@
 package geotrellis.admin.client.facades
-//package chandu0101.scalajs.facades.leaflet
 
 import org.scalajs.dom.raw.{HTMLElement, MouseEvent}
 

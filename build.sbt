@@ -17,31 +17,25 @@ lazy val commonSettings = Seq(
     "io.circe" %% "circe-core" % "0.4.1",
     "io.circe" %% "circe-generic" % "0.4.1",
     "io.circe" %% "circe-parser" % "0.4.1"
-  )
+  ),
+  shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 )
 
 lazy val serverSettings = Seq(
   libraryDependencies ++= Seq(
-    "org.scalatest"         %%  "scalatest"           % "2.2.0"    % "test",
-    "com.twitter"           %% "finagle-http"         % "6.34.0",
-    "com.twitter"           %% "twitter-server"       % "1.19.0",
-    "com.typesafe.akka"     %% "akka-http-core"       % "2.4.4",
-    "com.typesafe.akka"     %% "akka-http-experimental" % "2.4.4",
-    "de.heikoseeberger"     %% "akka-http-circe"      % "1.6.0",
-    "log4j"                 %  "log4j"                % "1.2.14",
-    "org.apache.spark"      %% "spark-core"           % "1.5.2",
-    "com.azavea.geotrellis" %% "geotrellis-accumulo"  % "0.10.0-RC4",
-    "com.azavea.geotrellis" %% "geotrellis-raster"    % "0.10.0-RC4",
-    "com.azavea.geotrellis" %% "geotrellis-s3"        % "0.10.0-RC4",
-    "com.azavea.geotrellis" %% "geotrellis-spark"     % "0.10.0-RC4",
-    "com.azavea.geotrellis" %% "geotrellis-spark-etl" % "0.10.0-RC4"
+    "com.azavea"            %% "geotrellis-ingest-test" % "0.1.0",
+    "com.azavea.geotrellis" %% "geotrellis-spark-etl"   % "0.10.0-RC4",
+    "com.azavea.geotrellis" %% "geotrellis-s3"          % "0.10.0-RC4",
+    "com.azavea.geotrellis" %% "geotrellis-raster"      % "0.10.0-RC4",
+    "org.apache.spark"      %% "spark-core"             % "1.5.2" % "provided",
+    "io.spray"              %% "spray-routing"          % "1.3.3",
+    "io.spray"              %% "spray-can"              % "1.3.3",
+    "org.scalatest"         %%  "scalatest"             % "2.2.0" % "test"
   ),
 
-  dependencyOverrides ++= Set(
+  /*dependencyOverrides ++= Set(
     "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.4"
-  ),
-
-  shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
+  )*/
 
   assemblyMergeStrategy in assembly := {
     case "reference.conf" => MergeStrategy.concat
@@ -64,9 +58,6 @@ lazy val clientSettings = Seq(
     "com.lihaoyi" %%% "utest" % "0.4.3" % "test",
     "com.github.japgolly.scalajs-react" %%% "core" % "0.11.0",
     "com.github.japgolly.scalajs-react" %%% "extra" % "0.11.0",
-    "io.circe" %% "circe-core" % "0.4.1",
-    "io.circe" %% "circe-generic" % "0.4.1",
-    "io.circe" %% "circe-parser" % "0.4.1",
     "io.circe" %% "circe-scalajs_sjs0.6" % "0.4.1",
     "com.lihaoyi" %%% "upickle" % "0.3.9",
     "me.chrons" %%% "diode" % "0.5.1",

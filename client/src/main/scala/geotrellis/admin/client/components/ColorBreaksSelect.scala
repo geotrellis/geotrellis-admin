@@ -22,8 +22,9 @@ import geotrellis.admin.client.circuit._
 object ColorBreaksSelect {
 
   class Backend($: BackendScope[ModelProxy[ColorBreaksModel], Unit]) {
-    def breakCountSelected(proxy: ModelProxy[ColorBreaksModel])(e: ReactEventI) ={
-      proxy.dispatch(SelectBreakCount(Try(e.target.value.toInt).toOption))}
+    def breakCountSelected(proxy: ModelProxy[ColorBreaksModel])(e: ReactEventI) = {
+      proxy.dispatch(SelectBreakCount(Try(e.target.value.toInt).toOption))
+    }
 
     def render(proxy: ModelProxy[ColorBreaksModel]) =
       <.div(^.id := "breaksCount", ^.className := "topbar",
