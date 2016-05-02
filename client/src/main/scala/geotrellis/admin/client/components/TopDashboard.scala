@@ -20,16 +20,7 @@ import geotrellis.admin.client.circuit.AppCircuit
 object TopDashboard {
 
   val dashboardDom =
-    <.nav(^.className := "navbar-default navbar-fixed-top",
-      <.div(^.className := "container",
-        <.div(^.className := "col-xs-6",
-          AppCircuit.connect(_.layerM)(LayerList(_))),
-        <.div(^.className := "col-xs-3",
-          AppCircuit.connect(_.colorM)(ColorRampList(_))),
-        <.div(^.className := "col-xs-3",
-          AppCircuit.connect(_.breaksM)(ColorBreaksSelect(_))
-        )
-      )
+    <.nav(^.className := "navbar-default navbar-fixed-top"
     )
   //.connect(_.todos.map(_.items.count(!_.completed)).toOption)(proxy => MainMenu(c, r.page, proxy))
 

@@ -87,3 +87,17 @@ body {
 .topbar {
   display: inline-block;
 }
+
+.color-item {
+  margin: 3px;
+  height: 15px;
+}
+
+.color-select {
+  width: 100%;
+}
+
+.color-display {
+  height: 100%;
+  display: inline-block;
+}

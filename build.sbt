@@ -12,25 +12,24 @@ lazy val commonSettings = Seq(
     "-language:higherKinds",
     "-language:postfixOps",
     "-language:existentials",
-    "-feature"),
+    "-feature"
+    ),
   libraryDependencies ++= Seq(
-    "io.circe" %% "circe-core" % "0.4.1",
-    "io.circe" %% "circe-generic" % "0.4.1",
-    "io.circe" %% "circe-parser" % "0.4.1"
   ),
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 )
 
 lazy val serverSettings = Seq(
+  name := "geotrellis-admin-server",
   libraryDependencies ++= Seq(
-    "com.azavea"            %% "geotrellis-ingest-test" % "0.1.0",
-    "com.azavea.geotrellis" %% "geotrellis-spark-etl"   % "0.10.0-RC4",
-    "com.azavea.geotrellis" %% "geotrellis-s3"          % "0.10.0-RC4",
-    "com.azavea.geotrellis" %% "geotrellis-raster"      % "0.10.0-RC4",
-    "org.apache.spark"      %% "spark-core"             % "1.5.2" % "provided",
-    "io.spray"              %% "spray-routing"          % "1.3.3",
-    "io.spray"              %% "spray-can"              % "1.3.3",
-    "org.scalatest"         %%  "scalatest"             % "2.2.0" % "test"
+    "com.azavea"            %% "geotrellis-ingest-test"   % "0.1.0",
+    "com.azavea.geotrellis" %% "geotrellis-spark-etl"     % "0.10.0",
+    "com.azavea.geotrellis" %% "geotrellis-s3"            % "0.10.0",
+    "com.azavea.geotrellis" %% "geotrellis-raster"        % "0.10.0",
+    "org.apache.spark"      %% "spark-core"               % "1.5.2" % "provided",
+    "io.spray"              %% "spray-routing" % "1.3.3",
+    "io.spray"              %% "spray-can"                % "1.3.3",
+    "org.scalatest"         %%  "scalatest"               % "2.2.0" % "test"
   ),
 
   /*dependencyOverrides ++= Set(
@@ -50,26 +49,37 @@ lazy val serverSettings = Seq(
 )
 
 lazy val clientSettings = Seq(
+  name := "geotrellis-admin-client",
   mainClass in (Compile, run) := Some("geotrellis.admin.client.Main"),
   refreshBrowsers <<= refreshBrowsers.triggeredBy(fastOptJS in Compile),
   bootSnippet := "geotrellis.admin.client.Main().main();",
   testFrameworks += new TestFramework("utest.runner.Framework"),
   libraryDependencies ++= Seq(
     "com.lihaoyi" %%% "utest" % "0.4.3" % "test",
-    "com.github.japgolly.scalajs-react" %%% "core" % "0.11.0",
-    "com.github.japgolly.scalajs-react" %%% "extra" % "0.11.0",
+    "com.github.japgolly.scalajs-react" %%% "core" % "0.11.1",
+    "com.github.japgolly.scalajs-react" %%% "extra" % "0.11.1",
+    "io.circe" %% "circe-core" % "0.4.1",
+    "io.circe" %% "circe-generic" % "0.4.1",
+    "io.circe" %% "circe-parser" % "0.4.1",
     "io.circe" %% "circe-scalajs_sjs0.6" % "0.4.1",
-    "com.lihaoyi" %%% "upickle" % "0.3.9",
     "me.chrons" %%% "diode" % "0.5.1",
     "me.chrons" %%% "diode-devtools" % "0.5.1",
     "me.chrons" %%% "diode-react" % "0.5.1",
     "org.scala-js" %%% "scalajs-dom" % "0.9.0",
-    "org.querki" %%% "jquery-facade" % "1.0-RC3"
+    "com.github.japgolly.scalacss" %% "core" % "0.4.1",
+    "com.github.japgolly.scalacss" %%% "ext-react" % "0.4.1",
+    "com.github.chandu0101.scalajs-react-components" %%% "core" % "0.4.1"
   ),
   jsDependencies ++= Seq(
     "org.webjars" % "jquery" % "2.2.1"
-    / "jquery.js" minified "jquery.min.js"
+    / "jquery.js"
+    minified "jquery.min.js"
     commonJSName "jQuery",
+
+    "org.webjars" % "bootstrap" % "3.3.2"
+    / "bootstrap.js"
+    minified "bootstrap.min.js"
+    dependsOn "jquery.js",
 
     "org.webjars.bower" % "react" % "15.0.1"
       /        "react-with-addons.js"
@@ -87,6 +97,10 @@ lazy val clientSettings = Seq(
       minified  "react-dom-server.min.js"
       dependsOn "react-dom.js"
       commonJSName "ReactDOMServer",
+
+    "org.webjars.npm" % "react-select" % "1.0.0-beta12"
+    /            "react-select.js"
+    minified     "react-select.min.js",
 
     "org.webjars.bower" % "leaflet" % "1.0.0-beta.2"
       /         "leaflet.js"
@@ -106,7 +120,7 @@ lazy val root = Project("geotrellis-admin", file(".")).
   )
 
 lazy val server = Project("server", file("server")).
-  dependsOn(sharedJVM).
+  //dependsOn(sharedJVM).
   settings(commonSettings: _*).
   settings(serverSettings: _*)
 

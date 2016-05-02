@@ -4,10 +4,11 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.router._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import org.scalajs.dom
+import scalacss.Defaults._
+import scalacss.ScalaCssReact._
 
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
-
 import scala.scalajs.js
 import scala.scalajs.js.Dynamic.{literal => json}
 import scala.scalajs.js.annotation.JSName
@@ -15,9 +16,12 @@ import scala.scalajs.js.{UndefOr, undefined}
 
 import geotrellis.admin.client.routes._
 import geotrellis.admin.client.components._
-
+import style.Style
 
 object Main extends JSApp {
+
+  // apply app css
+  AppCSS.load()
 
   // application location
   sealed trait Loc

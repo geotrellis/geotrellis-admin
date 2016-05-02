@@ -1,4 +1,6 @@
 package geotrellis.admin
 
-package object server {
+package object client {
 }
+
+

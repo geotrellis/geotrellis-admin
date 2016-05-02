@@ -11,4 +11,6 @@ package object components {
   val dataLiveSearch = "data-live-search".attr
 
   val dataContent = "data-content".attr
+
+  val jQuery = JQueryStatic
 }

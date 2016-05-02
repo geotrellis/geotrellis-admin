@@ -6,13 +6,13 @@ import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import spray.can.Http
 
-object Server {
+object Main {
   def main(args: Array[String]): Unit = {
-    implicit val system = ActorSystem("geotrellis-ingest-test")
+    implicit val system = ActorSystem("geotrellis-admin-server")
     val config = ConfigFactory.load()
     val host = config.getString("geotrellis.hostname")
     val port = config.getInt("geotrellis.port")
-    val service = system.actorOf(Props(classOf[GeotrellisDataHubActor], config), "geotrellis-ingest-test-service")
+    val service = system.actorOf(Props(classOf[GTAdminServiceActor], config), "geotrellis-admin-service")
 
     IO(Http) ! Http.Bind(service, host, port)
   }

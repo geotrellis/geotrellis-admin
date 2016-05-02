@@ -27,3 +27,7 @@ _SUCCESS
 *.swo
 *.sublime-*
 .vagrant
+
+# static file build artifacts
+node_modules
+assets

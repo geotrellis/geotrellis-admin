@@ -1,11 +1,11 @@
-package geotrellis.ingest.test
+package geotrellis.admin.server
 
-import geotrellis.kryo.AvroRegistrator
+import geotrellis.admin.server.util.AvroRegistrator
 import geotrellis.proj4.{LatLng, WebMercator}
 import geotrellis.raster._
 import geotrellis.raster.mapalgebra.local._
 import geotrellis.raster.render._
-import geotrellis.services._
+import geotrellis.admin.server.services._
 import geotrellis.spark._
 import geotrellis.spark.io.AttributeStore.Fields
 import geotrellis.spark.io._
@@ -13,6 +13,7 @@ import geotrellis.spark.io.s3._
 import geotrellis.vector.io.json.Implicits._
 import geotrellis.vector.Polygon
 import geotrellis.vector.reproject._
+import geotrellis.admin.server.util._
 
 import akka.actor._
 import org.apache.accumulo.core.client.security.tokens.PasswordToken
@@ -23,7 +24,7 @@ import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.routing._
 
-class GeotrellisIngestTestServiceActor(config: Config) extends Actor with GeotrellisIngestTestService {
+class GTAdminServiceActor(config: Config) extends Actor with GeotrellisIngestTestService {
   val conf = AvroRegistrator(new SparkConf()
     .setMaster(config.getString("spark.master"))
     .setAppName("IngestTest")
@@ -48,7 +49,7 @@ class GeotrellisIngestTestServiceActor(config: Config) extends Actor with Geotre
 
 }
 
-trait GeotrellisIngestTestService extends HttpService {
+trait GeotrellisIngestTestService extends HttpService with CORSSupport {
   implicit val sparkContext: SparkContext
 
   implicit val executionContext = actorRefFactory.dispatcher
@@ -58,7 +59,7 @@ trait GeotrellisIngestTestService extends HttpService {
   def tileReader(id: LayerId): Reader[SpatialKey, Tile]
 
   val staticPath: String
-  val baseZoomLevel = 9
+  val baseZoomLevel = 4
 
   def layerId(layer: String): LayerId =
     LayerId(layer, baseZoomLevel)
@@ -66,44 +67,64 @@ trait GeotrellisIngestTestService extends HttpService {
   def getMetaData(id: LayerId): TileLayerMetadata[SpatialKey] =
     attributeStore.readMetadata[TileLayerMetadata[SpatialKey]](id)
 
-  def serviceRoute = get {
-    pathPrefix("gt") {
-      pathPrefix("meta")(meta) ~
-      pathPrefix("tms")(tms) ~
-      pathPrefix("breaks")(breaks)
-    } ~
-    pathEndOrSingleSlash {
-      getFromResource("geotrellis/viewer/index.html")
-    } ~
-    pathPrefix("") {
-      getFromResourceDirectory("geotrellis/viewer")
+  def serviceRoute = cors {
+    get {
+      pathPrefix("gt") {
+        pathPrefix("bounds")(bounds) ~
+        pathPrefix("metadata")(metadata) ~
+        pathPrefix("layers")(layers) ~
+        pathPrefix("tms")(tms) ~
+        pathPrefix("breaks")(breaks)
+      } ~
+      pathEndOrSingleSlash {
+        getFromResource("geotrellis/viewer/index.html")
+      } ~
+      pathPrefix("") {
+        getFromResourceDirectory("geotrellis/viewer")
+      }
     }
   }
 
-  def meta = {
-    import DefaultJsonProtocol._
+  case class LayerDescription(name: String, availableZooms: Seq[Int])
+  object EndpointProtocol extends DefaultJsonProtocol {
+    implicit val ldFormat = jsonFormat2(LayerDescription)
+    implicit val gbFormat = jsonFormat4(GridBounds.apply)
+  }
+
+  def bounds = pathPrefix(Segment / IntNumber) { (layerName, zoom) =>
+    import EndpointProtocol._
+    val data = reader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId(layerName, zoom))
+    val bounds = data.metadata.gridBounds
+    complete(bounds)
+  }
+
+
+  def layers = {
+    import EndpointProtocol._
     complete {
-      attributeStore.layerIds.groupBy(_.name).mapValues(_.map(_.zoom).sorted)
+      attributeStore.layerIds.groupBy(_.name).mapValues(_.map(_.zoom).sorted).filter(l => !(l._2 contains 0) ).map(l => LayerDescription(l._1, l._2))
     }
   }
 
-  def breaks = pathPrefix(Segment) { layer =>
-    parameters(
-      'numBreaks.as[Int]
-    ) { (numBreaks) =>
-      import DefaultJsonProtocol._
-
-      val data = (reader
-        .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](layerId(layer))
-        .sample(false, // sample without replacement
-          0.10)
-      )
-
-      val breaks = data.classBreaks(numBreaks)
-      val doubleBreaks = data.classBreaksDouble(numBreaks)
-
-      complete(JsObject("classBreaks" -> breaks.toJson, "classBreaksDouble" -> doubleBreaks.toJson))
+  def metadata = pathPrefix(Segment / IntNumber) { (layerName, zoom) =>
+    complete {
+      val layer = LayerId(layerName, zoom)
+      val metad = getMetaData(layer)
+      println(metad)
+      metad
     }
+  }
+
+  def breaks = pathPrefix(Segment / IntNumber) { (layer, numBreaks) =>
+    import DefaultJsonProtocol._
+
+    val data = (reader
+      .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](layerId(layer))
+    )
+
+    val doubleBreaks = data.classBreaksDouble(numBreaks)
+
+    complete(JsObject("classBreaks" -> doubleBreaks.toJson))
   }
 
   val missingTileHandler = ExceptionHandler {
@@ -128,10 +149,7 @@ trait GeotrellisIngestTestService extends HttpService {
           complete(tile.getClass.getName)
         } ~
         pathPrefix("breaks") {
-          complete(
-            JsObject(
-              "classBreaks" -> tile.classBreaks(100).toJson,
-              "classBreaksDouble" -> tile.classBreaksDouble(100).toJson))
+          complete(JsObject("classBreaks" -> tile.classBreaksDouble(100).toJson))
         } ~
         pathPrefix("histo") {
           val histo = tile.histogram
@@ -159,7 +177,7 @@ trait GeotrellisIngestTestService extends HttpService {
           }
         }
       } ~
-      pathEnd { 
+      pathEnd {
         parameters(
           'breaks,
           'nodataColor ?,

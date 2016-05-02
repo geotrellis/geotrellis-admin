@@ -18,8 +18,8 @@ object Catalog {
   // Default to "blue-to-orange" breaks
   val colorRampReader: ModelR[RootModel, String] = AppCircuit.zoom(_.colorM.selection.getOrElse("blue-to-orange"))
 
-  def list = Ajax.get("http://localhost:8080/gt/meta")
+  def list = Ajax.get("http://localhost:8080/gt/layers")
   def detail(num: Int) = Ajax.get(s"http://localhost:8088/catalog/${layerNameReader.value}")
   def bounds = Ajax.get(s"http://localhost:8080/gt/bounds/${layerNameReader.value}/zoom")
-  def breaks = Ajax.get(s"http://localhost:8080/gt/breaks/${layerNameReader.value}?numBreaks=${breakCountReader.value}")
+  def breaks = Ajax.get(s"http://localhost:8080/gt/breaks/${layerNameReader.value}/${breakCountReader.value}")
 }
