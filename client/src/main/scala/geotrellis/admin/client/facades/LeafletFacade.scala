@@ -1505,7 +1505,7 @@ class LMap(id: String, options: UndefOr[LMapOptions]) extends LEventEmitter {
 
   def getCenter(): LLatLng = js.native
 
-  def getZoom(): Double = js.native
+  def getZoom(): Int = js.native
 
   def getMinZoom(): Double = js.native
 

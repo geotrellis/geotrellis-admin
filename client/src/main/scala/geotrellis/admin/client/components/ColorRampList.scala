@@ -4,11 +4,13 @@ import diode.react.ReactPot._
 import diode._
 import diode.react._
 import diode.data.Pot
-
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.router._
 import japgolly.scalajs.react.vdom.prefix_<^._
+import japgolly.scalajs.react.vdom.Extra
 import org.scalajs.dom
+import scalacss.Defaults._
+import scalacss.ScalaCssReact._
 
 import scala.scalajs.js
 import scala.scalajs.js.Dynamic.{literal => json}
@@ -18,8 +20,6 @@ import scala.scalajs.js.JSConverters._
 
 import geotrellis.admin.client.facades._
 import geotrellis.admin.client.circuit._
-
-import japgolly.scalajs.react.vdom.Extra
 
 
 object ColorRampList {
@@ -83,38 +83,87 @@ object ColorRampList {
     )
   )
 
-  class Backend($: BackendScope[ModelProxy[ColorRampModel], Unit]) {
+  object Style extends StyleSheet.Inline {
+    import dsl._
 
-    def onMount(proxy: ModelProxy[ColorRampModel]) =
+    val paletteContainer = style(
+      width(100 %%),
+      verticalAlign.middle
+    )
+
+    val colorPaletteList = style(
+      listStyleType := "none",
+      padding(0 px),
+      width(100 %%),
+      columnWidth(260 px)
+    )
+
+    val colorPalette = style(
+      opacity(0.4),
+      height(2 em),
+      width(45 %%),
+      margin(2 px),
+      display.inlineBlock,
+      border(thin, solid, grey),
+      &.hover(
+        opacity(1),
+        boxShadow := "10px, black",
+        cursor.pointer,
+        border(thin, solid, black)
+      )
+    )
+
+    val selectedColorPalette = style(
+      opacity(1).important,
+      border(thin, solid, black).important
+    )
+
+    val unselectedColorPalette = style()
+
+    val color = style(
+      height(100 %%),
+      display.inlineBlock
+    )
+
+  }
+
+  class Backend($: BackendScope[ModelProxy[ColorModel], Unit]) {
+
+    def onMount(proxy: ModelProxy[ColorModel]) =
       proxy.dispatch(SelectColorRamp(colorRamps.keys.headOption))
 
-    def rampSelected(proxy: ModelProxy[ColorRampModel], name: String) =
-      proxy.dispatch(SelectColorRamp(Some(name)))
-
-    def render(proxy: ModelProxy[ColorRampModel]) = {
-      <.ul(
-        ^.className := "color-list",
-        colorRamps.map { case (name, colors) =>
-          <.li(
-            ^.key := name,
-            ^.className := "color-item",
-            colors.map { color =>
-              <.div( ^.key := color,
-                ^.className := "color-display",
-                ^.style := js.Dictionary("width" -> s"${100.0 / colors.length}%", "backgroundColor" -> color),
-                ^.onClick --> rampSelected(proxy, name)
-              )
-            }
-          )
-        }
+    def render(proxy: ModelProxy[ColorModel]) = {
+      val selected = proxy().ramp.getOrElse("blue-to-orange")
+      <.div(
+        Style.paletteContainer,
+        <.h3("Color ramp"),
+        <.ul(
+          Style.colorPaletteList,
+          ^.className := "color-list",
+          colorRamps.map { case (name, colors) =>
+            <.li(
+              if (name == selected) Style.selectedColorPalette else Style.unselectedColorPalette,
+              Style.colorPalette,
+              ^.key := name,
+              ^.onClick --> proxy.dispatch(SelectColorRamp(Some(name))),
+              colors.map { color =>
+                <.div(
+                  ^.key := color,
+                  Style.color,
+                  ^.style := js.Dictionary("width" -> s"${100.0 / colors.length}%", "backgroundColor" -> color)
+                )
+              }
+            )
+          }
+        )
       )
     }
   }
 
-  private val colorRampSelect = ReactComponentB[ModelProxy[ColorRampModel]]("ColorRampSelect")
+  private val colorRampSelect = ReactComponentB[ModelProxy[ColorModel]]("ColorRampSelect")
     .renderBackend[Backend]
     .componentDidMount(scope => scope.backend.onMount(scope.props))
     .build
 
-  def apply(props: ModelProxy[ColorRampModel]) = colorRampSelect(props)
+  def apply(props: ModelProxy[ColorModel]) = colorRampSelect(props)
 }

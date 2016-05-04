@@ -14,7 +14,7 @@ import scalacss.Defaults._
 object Bootstrap {
 
   // shorthand for styles
-  @inline private def bss = GlobalStyles.bootstrapStyles
+  @inline private def bss = BootstrapStyles
 
   @js.native
   trait BootstrapJQuery extends JQuery {
@@ -35,7 +35,7 @@ object Bootstrap {
 
     val component = ReactComponentB[Props]("Button")
       .renderPC((_, p, c) =>
-        <.button(p.addStyles, ^.tpe := "button", ^.onClick --> p.onClick, c)
+        <.button(BootstrapStyles.buttonDefault, ^.tpe := "button", ^.onClick --> p.onClick, c)
       ).build
 
     def apply(props: Props, children: ReactNode*) = component(props, children: _*)

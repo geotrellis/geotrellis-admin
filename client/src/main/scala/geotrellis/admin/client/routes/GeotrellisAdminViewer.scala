@@ -22,20 +22,26 @@ import geotrellis.admin.client.components._
 import geotrellis.admin.client.circuit._
 
 
-object GTViewer {
+object GeotrellisAdminViewer {
 
-  val viewerDom =
-    <.div(
-      SideDashboard(),
-      TopDashboard(),
-      AppCircuit.connect({ (root: RootModel) => root })(LeafletMap(_))
-    )
+  case class State(showModal: Boolean = true)
 
-  private val viewer = ReactComponentB[Unit]("dashboard")
-    .render(_ => viewerDom)
+  class Backend($: BackendScope[Unit, State]) {
+    def render(state: State) = {
+      <.div(
+        AppCircuit.wrap(_.displayM.leafletM)(LeafletMap(_)),
+        if (state.showModal) AppCircuit.wrap(_.displayM)(SetupModal(_))
+        else Seq.empty[ReactElement]
+      )
+    }
+  }
+
+  private val component = ReactComponentB[Unit]("GeotrellisAdminClient")
+    .initialState(State())
+    .renderBackend[Backend]
     .build
 
-  def apply() = viewer()
+  def apply() = component()
 
 }
 

@@ -9,8 +9,8 @@ module.exports = {
         index: './bundle.js',
     },
     output: {
-        path: __dirname + '/client/target/scala-2.11/classes',
-        publicPath: "/client/target/scala-2.11/classes/",
+        path: __dirname + '/../client/target/scala-2.11/classes',
+        publicPath: "/../client/target/scala-2.11/classes/",
         filename: '[name]-bundle.js'
     },
     plugins: [

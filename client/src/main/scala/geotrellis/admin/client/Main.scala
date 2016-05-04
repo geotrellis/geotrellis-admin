@@ -16,7 +16,7 @@ import scala.scalajs.js.{UndefOr, undefined}
 
 import geotrellis.admin.client.routes._
 import geotrellis.admin.client.components._
-import style.Style
+import geotrellis.admin.client.circuit._
 
 object Main extends JSApp {
 
@@ -32,7 +32,7 @@ object Main extends JSApp {
   val routerConfig: RouterConfig[Loc] = RouterConfigDsl[Loc].buildConfig { dsl =>
     import dsl._
 
-    def layout = GTViewer()
+    def layout = GeotrellisAdminViewer()
 
     (staticRoute(root, DashboardLoc) ~> render(layout)).notFound(redirectToPage(DashboardLoc)(Redirect.Replace))
 

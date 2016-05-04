@@ -9,31 +9,53 @@ import io.circe.scalajs._
 import io.circe.generic.semiauto._
 
 import geotrellis.admin.shared._
-import geotrellis.admin.shared.Implicits._
 
 // Define models
-case class RootModel(layerM: LayerModel = LayerModel(),
-                     colorM: ColorRampModel = ColorRampModel(),
-                     breaksM: ColorBreaksModel = ColorBreaksModel()
-                   )
+case class RootModel(
+  layerM: LayerModel = LayerModel(),
+  colorM: ColorModel = ColorModel(),
+  breaksM: BreaksModel = BreaksModel(),
+  displayM: DisplayModel = DisplayModel()
+)
 case class LayerModel(layers: Pot[Array[LayerDescription]] = Empty, selection: Option[LayerDescription] = None)
-case class ColorRampModel(selection: Option[String] = None)
-case class ColorBreaksModel(breaks: Pot[Array[Double]] = Empty, breakCount: Option[Int] = None)
+case class ColorModel(ramp: Option[String] = None, opacity: Int = 100)
+case class BreaksModel(breaks: Pot[Array[Double]] = Empty, breaksCount: Option[Int] = None)
+
+case class LeafletModel(url: Option[String] = None, zoom: Option[Int] = None)
+case class DisplayModel(
+  layer: Option[LayerDescription] = None,
+  ramp: Option[String] = None,
+  opacity: Option[Int] = None,
+  breaksCount: Option[Int] = None,
+  metadata: Pot[Metadata] = Empty,
+  leafletM: LeafletModel = LeafletModel()
+)
 
 // Define actions
 sealed trait LayerActions
 case object RefreshLayers extends LayerActions
-case class UpdateLayers(layers: Array[LayerDescription]) extends LayerActions
+case class UpdateLayers(layers: Pot[Array[LayerDescription]]) extends LayerActions
 case class SelectLayer(layer: Option[LayerDescription]) extends LayerActions
 case object DeselectLayer extends LayerActions
 
-sealed trait ColorRampActions
-case class SelectColorRamp(ramp: Option[String]) extends ColorRampActions
-case object DeselectColorRamp extends ColorRampActions
+sealed trait ColorActions
+case class SelectColorRamp(ramp: Option[String]) extends ColorActions
+case class SetOpacity(opacity: Int) extends ColorActions
 
-sealed trait ColorBreakActions
-case object RefreshBreaks extends ColorBreakActions
-case class SelectBreakCount(break: Option[Int]) extends ColorBreakActions
-case class UpdateBreaks(breaks: Array[Double]) extends ColorBreakActions
+sealed trait BreaksActions
+case object RefreshBreaks extends BreaksActions
+case class SelectBreaksCount(breaks: Option[Int]) extends BreaksActions
+case class UpdateBreaks(breaks: Pot[Array[Double]]) extends BreaksActions
 
+sealed trait DisplayActions
+case object UpdateDisplay extends DisplayActions
+case object UpdateDisplayLayer extends DisplayActions
+case object UpdateDisplayRamp extends DisplayActions
+case object UpdateDisplayOpacity extends DisplayActions
+case object UpdateDisplayBreaksCount extends DisplayActions
+case object CollectMetadata extends DisplayActions
+case class UpdateMetadata(md: Pot[Metadata]) extends DisplayActions
 
+sealed trait LeafletActions
+case object UpdateTileLayer extends LeafletActions
+case class UpdateZoomLevel(z: Option[Int]) extends LeafletActions

@@ -5,6 +5,8 @@ import scalacss.Defaults._
 import scalacss.ScalaCssReact._
 import scalacss.mutable.GlobalRegistry
 
+import geotrellis.admin.client.components._
+
 object AppCSS {
   val registry = GlobalRegistry
 
@@ -12,7 +14,8 @@ object AppCSS {
 
   def load() = {
     registry.register(
-      style.Style
+      ColorRampList.Style,
+      BootstrapStyles
     )
     registry.addToDocumentOnRegistration()
   }

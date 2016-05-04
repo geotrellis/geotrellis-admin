@@ -1,10 +1,9 @@
 package geotrellis.admin.client.components
 
 import scalacss.Defaults._
-import scalacss.mutable
 import geotrellis.admin.client.components.Bootstrap.CommonStyle._
 
-class BootstrapStyles(implicit r: mutable.Register) extends StyleSheet.Inline()(r) {
+object BootstrapStyles extends StyleSheet.Inline {
 
   import dsl._
 
@@ -19,6 +18,8 @@ class BootstrapStyles(implicit r: mutable.Register) extends StyleSheet.Inline()(
   def styleWrap(classNames: String*) = style(addClassNames(classNames: _*))
 
   val buttonOpt = commonStyle(csDomain, "btn")
+
+  val buttonDefault = styleWrap("btn btn-default")
 
   val button = buttonOpt(default)
 

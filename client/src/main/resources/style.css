@@ -4,21 +4,12 @@ body {
   font-family: helvetica, arial, sans-serif;
 }
 
-#time-window {
-  position: absolute;
-  right: 10px;
-  top: 10px;
-  z-index: 1000;
-  background-color: white;
-  padding: 0px 10px 0px 10px;
-}
-
 #map {
   position: absolute;
   right: 0px;
   left: 340px;
   height: 100%;
-  top: 50px;
+  top: 0px;
 }
 
 .sidebar {

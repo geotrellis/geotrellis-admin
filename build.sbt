@@ -14,8 +14,7 @@ lazy val commonSettings = Seq(
     "-language:existentials",
     "-feature"
     ),
-  libraryDependencies ++= Seq(
-  ),
+  libraryDependencies ++= Seq(),
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 )
 
@@ -120,7 +119,7 @@ lazy val root = Project("geotrellis-admin", file(".")).
   )
 
 lazy val server = Project("server", file("server")).
-  //dependsOn(sharedJVM).
+  dependsOn(sharedJVM).
   settings(commonSettings: _*).
   settings(serverSettings: _*)
 

@@ -9,17 +9,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import geotrellis.admin.shared.LayerDescription
 
 object Catalog {
-  // Default to the empty string
-  val layerNameReader: ModelR[RootModel, String] = AppCircuit.zoom(_.layerM.selection.getOrElse(LayerDescription()).name)
-
-  // Default to 5 breaks
-  val breakCountReader: ModelR[RootModel, Int] = AppCircuit.zoom(_.breaksM.breakCount.getOrElse(5))
-
-  // Default to "blue-to-orange" breaks
-  val colorRampReader: ModelR[RootModel, String] = AppCircuit.zoom(_.colorM.selection.getOrElse("blue-to-orange"))
+  val currentLayerName: ModelR[RootModel, Option[String]] = AppCircuit.zoom(_.displayM.layer.map(_.name))
+  val currentColorRamp: ModelR[RootModel, Option[String]] = AppCircuit.zoom(_.displayM.ramp)
+  val currentBreaksCount: ModelR[RootModel, Option[Int]] = AppCircuit.zoom(_.displayM.breaksCount)
+  val currentOpacity: ModelR[RootModel, Option[Int]] = AppCircuit.zoom(_.displayM.opacity)
+  val currentZoomLevel: ModelR[RootModel, Option[Int]] = AppCircuit.zoom(_.displayM.leafletM.zoom)
 
   def list = Ajax.get("http://localhost:8080/gt/layers")
-  def detail(num: Int) = Ajax.get(s"http://localhost:8088/catalog/${layerNameReader.value}")
-  def bounds = Ajax.get(s"http://localhost:8080/gt/bounds/${layerNameReader.value}/zoom")
-  def breaks = Ajax.get(s"http://localhost:8080/gt/breaks/${layerNameReader.value}/${breakCountReader.value}")
+  def metadata(name: String, zoom: Int) = Ajax.get(s"http://localhost:8080/gt/metadata/${name}/${zoom}")
+  def bounds(name: String, zoom: Int) = Ajax.get(s"http://localhost:8080/gt/bounds/${name}/${zoom}")
+  def breaks(name: String, breaks: Int) = Ajax.get(s"http://localhost:8080/gt/breaks/${name}/${breaks}")
 }

@@ -1,7 +1,5 @@
 package geotrellis.admin.client.circuit
 
-import org.scalajs.dom.ext.Ajax
-
 import diode._
 import diode.data._
 import diode.util._
@@ -9,56 +7,127 @@ import diode.react.ReactConnector
 import io.circe._
 import io.circe.scalajs._
 import io.circe.generic.semiauto._
+import org.scalajs.dom.ext.Ajax
+import cats.data.Xor
 
 import scala.scalajs.js.JSON
 import scala.concurrent.ExecutionContext.Implicits.global
 
 import geotrellis.admin.shared._
-import geotrellis.admin.shared.Implicits._
-
 import Catalog._
 
-// Define handlers
+/** Display actions */
+class DisplayHandler[M](modelRW: ModelRW[M, DisplayModel]) extends ActionHandler(modelRW) {
+  override def handle = {
+    case UpdateDisplay => {
+      println("Updating display...")
+      effectOnly(
+        Effect.action(UpdateDisplayLayer) +
+        Effect.action(UpdateDisplayRamp) +
+        Effect.action(UpdateDisplayOpacity) +
+        Effect.action(UpdateDisplayBreaksCount) +
+        Effect.action(UpdateTileLayer) >>
+        Effect.action(CollectMetadata)
+      )}
+    case UpdateDisplayLayer => {
+      val ld = AppCircuit.zoom(_.layerM.selection).value
+      println("this is LD", ld)
+      updated(
+        value.copy(layer = ld),
+        Effect.action(UpdateZoomLevel(ld.flatMap(_.availableZooms.headOption)))
+      )
+    }
+    case UpdateDisplayRamp =>
+      updated(value.copy(ramp = AppCircuit.zoom(_.colorM.ramp).value))
+    case UpdateDisplayOpacity =>
+      updated(value.copy(opacity = Some(AppCircuit.zoom(_.colorM.opacity).value)))
+    case UpdateDisplayBreaksCount =>
+      updated(value.copy(breaksCount = AppCircuit.zoom(_.breaksM.breaksCount).value))
+    case CollectMetadata => {
+      effectOnly(Effect(Catalog.metadata(currentLayerName.value.get, currentZoomLevel.value.get).map { res =>
+        val parsed = JSON.parse(res.responseText)
+        val md = decodeJs[Metadata](parsed)
+        md match {
+          case Xor.Right(md) => UpdateMetadata(Ready(md))
+          case Xor.Left(e) => UpdateMetadata(Failed(e))
+        }
+      }))
+    }
+    case UpdateMetadata(md) =>
+      updated(value.copy(metadata = md))
+  }
+}
+
+/** Leaflet handler */
+class LeafletHandler[M](modelRW: ModelRW[M, LeafletModel]) extends ActionHandler(modelRW) {
+  override def handle = {
+    case UpdateTileLayer => {
+      val urlTemplate = for {
+        layerName <- currentLayerName.value
+        colorRamp <- currentColorRamp.value
+        breaks <- currentBreaksCount.value
+      } yield s"""http://0.0.0.0:8080/gt/tms/${layerName}/{z}/{x}/{y}?colorRamp=${colorRamp}&breaks=0,1,3,5,8,10,20,30,40,50,60,80,100,200"""
+      println(urlTemplate)
+
+      updated(value.copy(url = urlTemplate))
+    }
+    case UpdateZoomLevel(zl) =>{
+      println(AppCircuit.zoom(_.displayM).value)
+      updated(value.copy(zoom = zl), Effect.action(CollectMetadata))
+    }
+  }
+}
+
+/** Layer actions */
 class LayerHandler[M](modelRW: ModelRW[M, LayerModel]) extends ActionHandler(modelRW) {
   override def handle = {
     case RefreshLayers =>
       effectOnly(Effect(Catalog.list.map { res =>
         val parsed = JSON.parse(res.responseText)
         val layers = decodeJs[Array[LayerDescription]](parsed)
-        UpdateLayers(layers.getOrElse(Array[LayerDescription]()))
+        layers match {
+          case Xor.Right(ls) => UpdateLayers(Ready(ls))
+          case Xor.Left(e) => UpdateLayers(Failed(e))
+        }
       }))
     case UpdateLayers(layers) =>
-      updated(value.copy(layers = Ready(layers)))
+      updated(value.copy(layers = layers))
     case SelectLayer(layer) =>
-      println(layerNameReader.value, breakCountReader.value, colorRampReader.value)
       updated(value.copy(selection = layer))
     case DeselectLayer =>
       updated(value.copy(selection = None))
   }
 }
-class ColorBreaksHandler[M](modelRW: ModelRW[M, ColorBreaksModel]) extends ActionHandler(modelRW) {
+
+/** Breaks actions */
+class BreaksHandler[M](modelRW: ModelRW[M, BreaksModel]) extends ActionHandler(modelRW) {
   override def handle = {
     case RefreshBreaks =>
-      effectOnly(Effect(Catalog.breaks.map { res =>
-        val parsed = JSON.parse(res.responseText)
-        val layers = decodeJs[Array[Double]](parsed)
-        println(parsed)
-        UpdateBreaks(layers.getOrElse(Array()))
-      }))
+      effectOnly(Effect(
+        Catalog.breaks(currentLayerName.value.getOrElse(""), currentBreaksCount.value.getOrElse(0)).map { res =>
+          val parsed = JSON.parse(res.responseText)
+          val breaks = decodeJs[Array[Double]](parsed)
+          breaks match {
+            case Xor.Right(brs) => UpdateBreaks(Ready(brs))
+            case Xor.Left(e) => UpdateBreaks(Failed(e))
+          }
+        }
+      ))
     case UpdateBreaks(breaks) =>
-      updated(value.copy(breaks = Ready(breaks)))
-    case SelectBreakCount(count) => {
-      updated(value.copy(breakCount = count), Effect.action(RefreshBreaks))
+      updated(value.copy(breaks = breaks))
+    case SelectBreaksCount(count) => {
+      updated(value.copy(breaksCount = count))
     }
   }
 }
 
-class ColorRampHandler[M](modelRW: ModelRW[M, ColorRampModel]) extends ActionHandler(modelRW) {
+/** Color actions */
+class ColorHandler[M](modelRW: ModelRW[M, ColorModel]) extends ActionHandler(modelRW) {
   override def handle = {
     case SelectColorRamp(ramp) =>
-      updated(value.copy(selection = ramp))
-    case DeselectColorRamp =>
-      updated(value.copy(selection = None))
+      updated(value.copy(ramp = ramp))
+    case SetOpacity(opacity) =>
+      updated(value.copy(opacity = opacity))
   }
 }
 
@@ -67,8 +136,13 @@ object AppCircuit extends Circuit[RootModel] with ReactConnector[RootModel] {
   override def initialModel = RootModel()
   // combine all handlers into one
   override protected val actionHandler = composeHandlers(
+    new DisplayHandler(zoomRW(_.displayM)((root, newVal) => root.copy(displayM = newVal))),
+    new LeafletHandler(
+      zoomRW(_.displayM)((root, newVal) => root.copy(displayM = newVal))
+        .zoomRW(_.leafletM)((display, newVal) => display.copy(leafletM = newVal))
+    ),
     new LayerHandler(zoomRW(_.layerM)((root, newVal) => root.copy(layerM = newVal))),
-    new ColorRampHandler(zoomRW(_.colorM)((root, newVal) => root.copy(colorM = newVal))),
-    new ColorBreaksHandler(zoomRW(_.breaksM)((root, newVal) => root.copy(breaksM = newVal)))
+    new ColorHandler(zoomRW(_.colorM)((root, newVal) => root.copy(colorM = newVal))),
+    new BreaksHandler(zoomRW(_.breaksM)((root, newVal) => root.copy(breaksM = newVal)))
   )
 }
