@@ -24,10 +24,10 @@ import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.routing._
 
-class GTAdminServiceActor(config: Config) extends Actor with GeotrellisIngestTestService {
+class GeotrellisAdminServiceActor(config: Config) extends Actor with GeotrellisAdminService{
   val conf = AvroRegistrator(new SparkConf()
     .setMaster(config.getString("spark.master"))
-    .setAppName("IngestTest")
+    .setAppName("geotrellis-admin")
     .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     .set("spark.kryo.registrator", "geotrellis.spark.io.kryo.KryoRegistrator")
     .setJars(SparkContext.jarOfObject(this).toList)
@@ -49,7 +49,7 @@ class GTAdminServiceActor(config: Config) extends Actor with GeotrellisIngestTes
 
 }
 
-trait GeotrellisIngestTestService extends HttpService with CORSSupport {
+trait GeotrellisAdminService extends HttpService with CORSSupport {
   implicit val sparkContext: SparkContext
 
   implicit val executionContext = actorRefFactory.dispatcher

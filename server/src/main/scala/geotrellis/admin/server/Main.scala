@@ -12,7 +12,7 @@ object Main {
     val config = ConfigFactory.load()
     val host = config.getString("geotrellis.hostname")
     val port = config.getInt("geotrellis.port")
-    val service = system.actorOf(Props(classOf[GTAdminServiceActor], config), "geotrellis-admin-service")
+    val service = system.actorOf(Props(classOf[GeotrellisAdminServiceActor], config), "geotrellis-admin-service")
 
     IO(Http) ! Http.Bind(service, host, port)
   }
