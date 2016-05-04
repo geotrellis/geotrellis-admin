@@ -30,6 +30,7 @@ object GeotrellisAdminViewer {
     def render(state: State) = {
       <.div(
         AppCircuit.wrap(_.displayM.leafletM)(LeafletMap(_)),
+        AppCircuit.connect(_.displayM)(InfoPanel(_)),
         if (state.showModal) AppCircuit.wrap(_.displayM)(SetupModal(_))
         else Seq.empty[ReactElement]
       )

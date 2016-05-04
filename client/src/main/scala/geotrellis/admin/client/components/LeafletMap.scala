@@ -26,6 +26,7 @@ import geotrellis.admin.client.facades._
 import geotrellis.admin.client.circuit._
 
 object LeafletMap {
+
   var lmap: js.UndefOr[LMap] =
     js.undefined
 
@@ -86,9 +87,7 @@ object LeafletMap {
     }
 
     def render() =
-      <.div(
-        ^.id := "map"
-      )
+      <.div(^.id := "map")
   }
 
   private val leafletMap = ReactComponentB[ModelProxy[LeafletModel]]("LeafletMap")
