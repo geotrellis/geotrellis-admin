@@ -39,21 +39,31 @@ object LeafletMap {
       .zoom(AppCircuit.zoom(_.displayM.leafletM.zoom).value.getOrElse(5))
       .result
 
-  def updateMap = Callback {
-    // Set zoom level
-    AppCircuit.zoom(_.displayM.leafletM.zoom).value.map { zoom =>
-      lmap.get.setZoom(zoom)
-    }
+  def tileLayerOpts(minZoom: Int, maxZoom: Int) =
+    LTileLayerOptions
+      .errorTileUrl("/gt/errorTile")
+      .minZoom(minZoom)
+      .maxZoom(maxZoom)
+      .result
 
-    // Set the new tilelayer name
-    AppCircuit.zoom(_.displayM.leafletM.url).value.map { template =>
+  def updateMap = Callback {
+    val displayModel = AppCircuit.zoom(_.displayM).value
+    for {
+      layer <- displayModel.layer
+      template <- displayModel.leafletM.url
+      initZoom <- displayModel.leafletM.zoom
+      minZoom = layer.availableZooms.min
+      maxZoom = layer.availableZooms.max
+    } yield {
       if (!js.isUndefined(gtLayer)) lmap.get.removeLayer(gtLayer.get)
-      gtLayer = LTileLayer(template)
+      gtLayer = LTileLayer(template, tileLayerOpts(minZoom, maxZoom))
       gtLayer.get.addTo(lmap.get)
+
+      lmap.get.setZoom(initZoom)
     }
   }
 
-  def tileLayerOpts(maxZoom: Int, attrib: String) =
+  def baseLayerOpts(maxZoom: Int, attrib: String) =
     LTileLayerOptions
       .maxZoom(maxZoom)
       .attribution(attrib)
@@ -76,7 +86,7 @@ object LeafletMap {
   )
 
   def getLayer(url: String, attrib: String): LTileLayer = {
-    LTileLayer(url, tileLayerOpts(18, attrib));
+    LTileLayer(url, baseLayerOpts(18, attrib));
   };
 
   class Backend($: BackendScope[ModelProxy[LeafletModel], Unit]) extends OnUnmount {

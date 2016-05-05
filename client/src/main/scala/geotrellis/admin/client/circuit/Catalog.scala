@@ -16,8 +16,8 @@ object Catalog {
   val currentOpacity: ModelR[RootModel, Option[Int]] = AppCircuit.zoom(_.displayM.opacity)
   val currentZoomLevel: ModelR[RootModel, Option[Int]] = AppCircuit.zoom(_.displayM.leafletM.zoom)
 
-  def list = Ajax.get("http://localhost:8080/gt/layers")
-  def metadata(name: String, zoom: Int) = Ajax.get(s"http://localhost:8080/gt/metadata/${name}/${zoom}")
-  def bounds(name: String, zoom: Int) = Ajax.get(s"http://localhost:8080/gt/bounds/${name}/${zoom}")
-  def breaks(name: String, breaks: Int) = Ajax.get(s"http://localhost:8080/gt/breaks/${name}/${breaks}")
+  def list = Ajax.get("/gt/layers")
+  def metadata(name: String, zoom: Int) = Ajax.get(s"/gt/metadata/${name}/${zoom}")
+  def bounds(name: String, zoom: Int) = Ajax.get(s"/gt/bounds/${name}/${zoom}")
+  def breaks(name: String, breaks: Int) = Ajax.get(s"/gt/breaks/${name}/${breaks}")
 }

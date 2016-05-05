@@ -17,34 +17,33 @@ import geotrellis.admin.server.util._
 
 import akka.actor._
 import org.apache.accumulo.core.client.security.tokens.PasswordToken
-import com.typesafe.config.Config
 import org.apache.spark.{SparkConf, SparkContext}
 import spray.http._
 import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.routing._
 
-class GeotrellisAdminServiceActor(config: Config) extends Actor with GeotrellisAdminService{
-  val conf = AvroRegistrator(new SparkConf()
-    .setMaster(config.getString("spark.master"))
-    .setAppName("geotrellis-admin")
-    .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    .set("spark.kryo.registrator", "geotrellis.spark.io.kryo.KryoRegistrator")
-    .setJars(SparkContext.jarOfObject(this).toList)
+class GeotrellisAdminServiceActor extends Actor with GeotrellisAdminService{
+  val conf = AvroRegistrator(
+    new SparkConf()
+      .setMaster(sys.env("SPARK_MASTER"))
+      .setAppName("geotrellis-admin")
+      .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      .set("spark.kryo.registrator", "geotrellis.spark.io.kryo.KryoRegistrator")
+      .setJars(SparkContext.jarOfObject(this).toList)
   )
 
   implicit val sparkContext = new SparkContext(conf)
 
   override def actorRefFactory = context
   override def receive = runRoute(serviceRoute)
-  override val staticPath = config.getString("geotrellis.static-path")
 
-  val s3Bucket = config.getString("geotrellis.s3.bucket")
-  val s3Key = config.getString("geotrellis.s3.key");
+  val s3Bucket = sys.env("S3_BUCKET")
+  val s3Key = sys.env("S3_KEY")
 
   override lazy val reader: LayerReader[LayerId] = S3LayerReader(s3Bucket, s3Key)
   override lazy val attributeStore: AttributeStore = S3AttributeStore(s3Bucket, s3Key)
-  override def tileReader(id: LayerId): Reader[SpatialKey, Tile] = 
+  override def tileReader(id: LayerId): Reader[SpatialKey, Tile] =
     S3ValueReader(attributeStore, id)
 
 }
@@ -58,7 +57,6 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
   def attributeStore: AttributeStore
   def tileReader(id: LayerId): Reader[SpatialKey, Tile]
 
-  val staticPath: String
   val baseZoomLevel = 4
 
   def layerId(layer: String): LayerId =
@@ -70,6 +68,7 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
   def serviceRoute = cors {
     get {
       pathPrefix("gt") {
+        pathPrefix("errorTile")(errorTile) ~
         pathPrefix("bounds")(bounds) ~
         pathPrefix("metadata")(metadata) ~
         pathPrefix("layers")(layers) ~
@@ -91,13 +90,17 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
     implicit val gbFormat = jsonFormat4(GridBounds.apply)
   }
 
+  def errorTile =
+    respondWithMediaType(MediaTypes.`image/png`) {
+      complete(util.ErrorTile())
+    }
+
   def bounds = pathPrefix(Segment / IntNumber) { (layerName, zoom) =>
     import EndpointProtocol._
     val data = reader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId(layerName, zoom))
     val bounds = data.metadata.gridBounds
     complete(bounds)
   }
-
 
   def layers = {
     import EndpointProtocol._

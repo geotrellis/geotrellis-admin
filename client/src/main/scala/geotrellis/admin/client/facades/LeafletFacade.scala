@@ -789,7 +789,7 @@ class LTileLayerOptionsBuilder(val dict: OptMap) extends JSOptionBuilder[LTileLa
 
   def maxNativeZoom(v: Double) = jsOpt("maxNativeZoom", v)
 
-  def minZoom(v: Double) = jsOpt("minZoom", v)
+  def minZoom(v: Int) = jsOpt("minZoom", v)
 
   def zoomOffset(v: Double) = jsOpt("zoomOffset", v)
 
@@ -799,7 +799,7 @@ class LTileLayerOptionsBuilder(val dict: OptMap) extends JSOptionBuilder[LTileLa
 
   def errorTileUrl(v: String) = jsOpt("errorTileUrl", v)
 
-  def maxZoom(v: Double) = jsOpt("maxZoom", v)
+  def maxZoom(v: Int) = jsOpt("maxZoom", v)
 
   def continuousWorld(v: Boolean) = jsOpt("continuousWorld", v)
 

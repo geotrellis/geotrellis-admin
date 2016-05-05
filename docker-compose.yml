@@ -1,0 +1,15 @@
+version: '2'
+services:
+  gtAdminServer:
+    image: moradology/geotrellis-admin-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ~/.aws:/root/.aws
+  gtAdminClient:
+    image: moradology/geotrellis-admin-client
+    ports:
+      - "80:80"
+    links:
+      - gtAdminServer:geotrellis.admin.server
+
