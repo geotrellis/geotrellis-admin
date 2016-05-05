@@ -19,6 +19,18 @@ body {
   width: 340px;
   bottom: 0;
   overflow-y: auto;
-  padding: 20px;
+  padding: 15px;
   padding-bottom: 60px;
+}
+
+.sidebar p {
+  padding-left: 20px;
+}
+
+.sidebar h5 {
+  padding-left: 10px;
+}
+
+p {
+  margin-bottom: 0px !important;
 }

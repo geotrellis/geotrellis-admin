@@ -1,6 +1,7 @@
 package geotrellis.admin.client.components
 
 import scalacss.Defaults._
+
 import geotrellis.admin.client.components.Bootstrap.CommonStyle._
 
 object BootstrapStyles extends StyleSheet.Inline {

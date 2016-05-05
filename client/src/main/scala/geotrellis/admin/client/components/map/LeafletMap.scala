@@ -1,4 +1,4 @@
-package geotrellis.admin.client.components
+package geotrellis.admin.client.components.map
 
 import diode.react.ReactPot._
 import diode._
@@ -39,7 +39,13 @@ object LeafletMap {
       .zoom(AppCircuit.zoom(_.displayM.leafletM.zoom).value.getOrElse(5))
       .result
 
-  def updateTile = Callback {
+  def updateMap = Callback {
+    // Set zoom level
+    AppCircuit.zoom(_.displayM.leafletM.zoom).value.map { zoom =>
+      lmap.get.setZoom(zoom)
+    }
+
+    // Set the new tilelayer name
     AppCircuit.zoom(_.displayM.leafletM.url).value.map { template =>
       if (!js.isUndefined(gtLayer)) lmap.get.removeLayer(gtLayer.get)
       gtLayer = LTileLayer(template)
@@ -93,7 +99,7 @@ object LeafletMap {
   private val leafletMap = ReactComponentB[ModelProxy[LeafletModel]]("LeafletMap")
     .renderBackend[Backend]
     .componentDidMount(_.backend.init)
-    .componentDidUpdate(_ => updateTile)
+    .componentDidUpdate(_ => updateMap)
     .build
 
   def apply(proxy: ModelProxy[LeafletModel]) = leafletMap(proxy)

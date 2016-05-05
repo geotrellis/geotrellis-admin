@@ -21,7 +21,6 @@ lazy val commonSettings = Seq(
 lazy val serverSettings = Seq(
   name := "geotrellis-admin-server",
   libraryDependencies ++= Seq(
-    "com.azavea"            %% "geotrellis-ingest-test"   % "0.1.0",
     "com.azavea.geotrellis" %% "geotrellis-spark-etl"     % "0.10.0",
     "com.azavea.geotrellis" %% "geotrellis-s3"            % "0.10.0",
     "com.azavea.geotrellis" %% "geotrellis-raster"        % "0.10.0",

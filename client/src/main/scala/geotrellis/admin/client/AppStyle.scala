@@ -5,6 +5,9 @@ import scalacss.Defaults._
 import scalacss.ScalaCssReact._
 import scalacss.mutable.GlobalRegistry
 
+import geotrellis.admin.client.components.map._
+import geotrellis.admin.client.components.modal._
+import geotrellis.admin.client.components.sidebar._
 import geotrellis.admin.client.components._
 
 object AppCSS {
@@ -15,6 +18,7 @@ object AppCSS {
   def load() = {
     registry.register(
       ColorRampList.Style,
+      InfoPanel.Style,
       BootstrapStyles
     )
     registry.addToDocumentOnRegistration()

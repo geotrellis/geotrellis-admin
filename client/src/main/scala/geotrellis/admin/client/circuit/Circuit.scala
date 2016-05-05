@@ -20,18 +20,14 @@ import Catalog._
 class DisplayHandler[M](modelRW: ModelRW[M, DisplayModel]) extends ActionHandler(modelRW) {
   override def handle = {
     case UpdateDisplay => {
-      println("Updating display...")
       effectOnly(
-        Effect.action(UpdateDisplayLayer) +
-        Effect.action(UpdateDisplayRamp) +
-        Effect.action(UpdateDisplayOpacity) +
-        Effect.action(UpdateDisplayBreaksCount) +
-        Effect.action(UpdateTileLayer) >>
-        Effect.action(CollectMetadata)
+        Effect.action(UpdateDisplayLayer) + Effect.action(UpdateDisplayBreaksCount) + Effect.action(UpdateDisplayRamp) +
+        Effect.action(UpdateDisplayOpacity) >>
+        Effect.action(RefreshBreaks) >>
+        Effect.action(UpdateTileLayer) + Effect.action(CollectMetadata)
       )}
     case UpdateDisplayLayer => {
       val ld = AppCircuit.zoom(_.layerM.selection).value
-      println("this is LD", ld)
       updated(
         value.copy(layer = ld),
         Effect.action(UpdateZoomLevel(ld.flatMap(_.availableZooms.headOption)))
@@ -65,14 +61,12 @@ class LeafletHandler[M](modelRW: ModelRW[M, LeafletModel]) extends ActionHandler
       val urlTemplate = for {
         layerName <- currentLayerName.value
         colorRamp <- currentColorRamp.value
-        breaks <- currentBreaksCount.value
-      } yield s"""http://0.0.0.0:8080/gt/tms/${layerName}/{z}/{x}/{y}?colorRamp=${colorRamp}&breaks=0,1,3,5,8,10,20,30,40,50,60,80,100,200"""
-      println(urlTemplate)
+        breaks <- currentBreaks.value.toOption
+      } yield s"""http://0.0.0.0:8080/gt/tms/${layerName}/{z}/{x}/{y}?colorRamp=${colorRamp}&breaks=${breaks.mkString(",")}"""
 
       updated(value.copy(url = urlTemplate))
     }
     case UpdateZoomLevel(zl) =>{
-      println(AppCircuit.zoom(_.displayM).value)
       updated(value.copy(zoom = zl), Effect.action(CollectMetadata))
     }
   }
@@ -106,15 +100,16 @@ class BreaksHandler[M](modelRW: ModelRW[M, BreaksModel]) extends ActionHandler(m
       effectOnly(Effect(
         Catalog.breaks(currentLayerName.value.getOrElse(""), currentBreaksCount.value.getOrElse(0)).map { res =>
           val parsed = JSON.parse(res.responseText)
-          val breaks = decodeJs[Array[Double]](parsed)
+          val breaks = decodeJs[ClassBreaks](parsed)
           breaks match {
-            case Xor.Right(brs) => UpdateBreaks(Ready(brs))
+            case Xor.Right(brs) => UpdateBreaks(Ready(brs.classBreaks))
             case Xor.Left(e) => UpdateBreaks(Failed(e))
           }
         }
       ))
-    case UpdateBreaks(breaks) =>
-      updated(value.copy(breaks = breaks))
+    case UpdateBreaks(breaks) => {
+      updated(value.copy(breaks = breaks), Effect.action(UpdateTileLayer))
+    }
     case SelectBreaksCount(count) => {
       updated(value.copy(breaksCount = count))
     }

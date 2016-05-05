@@ -1,4 +1,4 @@
-package geotrellis.admin.client.components
+package geotrellis.admin.client.components.modal
 
 import diode._
 import diode.react._
@@ -19,6 +19,7 @@ import scala.scalajs.js.JSConverters._
 import scala.util.Try
 
 import geotrellis.admin.client.facades._
+import geotrellis.admin.client.components._
 import geotrellis.admin.client.circuit._
 
 object ColorOpacity {

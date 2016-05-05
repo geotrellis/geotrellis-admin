@@ -8,9 +8,9 @@ import geotrellis.admin.shared._
 package object circuit {
 
   implicit val decodeClassBreaks: Decoder[ClassBreaks] =
-    Decoder.forProduct1("breaks")(ClassBreaks.apply)
+    Decoder.forProduct1("classBreaks")(ClassBreaks.apply)
   implicit val encodeClassBreaks: Encoder[ClassBreaks] =
-    Encoder.forProduct1("breaks")(l => (l.breaks))
+    Encoder.forProduct1("classBreaks")(l => (l.classBreaks))
 
   implicit val decodeLayerDescription: Decoder[LayerDescription] =
     Decoder.forProduct2("name", "availableZooms")(LayerDescription.apply)

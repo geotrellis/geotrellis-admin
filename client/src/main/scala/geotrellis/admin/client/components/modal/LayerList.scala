@@ -1,4 +1,4 @@
-package geotrellis.admin.client.components
+package geotrellis.admin.client.components.modal
 
 import diode._
 import diode.react._

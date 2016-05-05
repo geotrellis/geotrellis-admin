@@ -10,13 +10,13 @@ import scala.scalajs.js.annotation.JSName
   * https://github.com/jducoeur/jquery-facade for more complete one.
   */
 @js.native
-  trait JQueryEventObject extends Event {
+trait JQueryEventObject extends Event {
   var data: js.Any = js.native
 }
 
 @js.native
 @JSName("jQuery")
-  object JQueryStatic extends js.Object {
+object JQueryStatic extends js.Object {
   def apply(element: Element): JQuery = js.native
 }
 

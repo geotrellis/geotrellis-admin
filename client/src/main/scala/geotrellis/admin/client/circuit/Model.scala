@@ -32,30 +32,25 @@ case class DisplayModel(
 )
 
 // Define actions
-sealed trait LayerActions
-case object RefreshLayers extends LayerActions
-case class UpdateLayers(layers: Pot[Array[LayerDescription]]) extends LayerActions
-case class SelectLayer(layer: Option[LayerDescription]) extends LayerActions
-case object DeselectLayer extends LayerActions
+case object RefreshLayers
+case class SelectLayer(layer: Option[LayerDescription])
+case object DeselectLayer
+case class UpdateLayers(layers: Pot[Array[LayerDescription]] = Empty)
 
-sealed trait ColorActions
-case class SelectColorRamp(ramp: Option[String]) extends ColorActions
-case class SetOpacity(opacity: Int) extends ColorActions
+case class SelectColorRamp(ramp: Option[String])
+case class SetOpacity(opacity: Int)
 
-sealed trait BreaksActions
-case object RefreshBreaks extends BreaksActions
-case class SelectBreaksCount(breaks: Option[Int]) extends BreaksActions
-case class UpdateBreaks(breaks: Pot[Array[Double]]) extends BreaksActions
+case object RefreshBreaks
+case class SelectBreaksCount(breaks: Option[Int])
+case class UpdateBreaks(breaks: Pot[Array[Double]] = Empty)
 
-sealed trait DisplayActions
-case object UpdateDisplay extends DisplayActions
-case object UpdateDisplayLayer extends DisplayActions
-case object UpdateDisplayRamp extends DisplayActions
-case object UpdateDisplayOpacity extends DisplayActions
-case object UpdateDisplayBreaksCount extends DisplayActions
-case object CollectMetadata extends DisplayActions
-case class UpdateMetadata(md: Pot[Metadata]) extends DisplayActions
+case object UpdateDisplay
+case object UpdateDisplayLayer
+case object UpdateDisplayRamp
+case object UpdateDisplayOpacity
+case object UpdateDisplayBreaksCount
+case object CollectMetadata
+case class UpdateMetadata(md: Pot[Metadata] = Empty)
 
-sealed trait LeafletActions
-case object UpdateTileLayer extends LeafletActions
-case class UpdateZoomLevel(z: Option[Int]) extends LeafletActions
+case object UpdateTileLayer
+case class UpdateZoomLevel(z: Option[Int])

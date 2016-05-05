@@ -32,7 +32,7 @@ object Main extends JSApp {
   val routerConfig: RouterConfig[Loc] = RouterConfigDsl[Loc].buildConfig { dsl =>
     import dsl._
 
-    def layout = GeotrellisAdminViewer()
+    def layout = AppCircuit.wrap(_.displayM)(GeotrellisAdminViewer(_))
 
     (staticRoute(root, DashboardLoc) ~> render(layout)).notFound(redirectToPage(DashboardLoc)(Redirect.Replace))
 

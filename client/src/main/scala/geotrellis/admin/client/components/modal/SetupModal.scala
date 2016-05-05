@@ -1,4 +1,4 @@
-package geotrellis.admin.client.routes
+package geotrellis.admin.client.components.modal
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.router._
@@ -26,17 +26,18 @@ import geotrellis.admin.shared._
 object SetupModal {
   @inline private def bss = BootstrapStyles
 
+  case class Props(onAccept: Callback, onClose: Callback)
   case class State(layer: Option[LayerDescription] = None)
 
-  class Backend($: BackendScope[ModelProxy[DisplayModel], State]) {
+  class Backend($: BackendScope[Props, State]) {
 
-    def render(proxy: ModelProxy[DisplayModel]) = {
+    def render(props: Props) = {
       <.div(
         Modal(
           Modal.Props(
-            header = hide => <.span(<.button(^.tpe := "button", bss.close, ^.onClick --> hide, "x"), <.h2("Layer rendering options")),
-            footer = hide => <.span(Button(Button.Props(proxy.dispatch(UpdateDisplay) >> hide), "OK")),
-            closed = Callback.info("Closing modal")
+            header = hide => <.span(<.button(^.tpe := "button", bss.close, ^.onClick --> (props.onClose >> hide), "x"), <.h2("Layer rendering options")),
+            footer = hide => <.span(Button(Button.Props(props.onAccept >> hide), "OK")),
+            closed = props.onClose
           ),
           AppCircuit.connect(_.layerM)(LayerList(_)),
           AppCircuit.connect(_.colorM)(ColorRampList(_)),
@@ -47,11 +48,11 @@ object SetupModal {
     }
   }
 
-  private val component = ReactComponentB[ModelProxy[DisplayModel]]("dashboard")
+  private val component = ReactComponentB[Props]("dashboard")
     .initialState(State())
     .renderBackend[Backend]
     .build
 
-  def apply(proxy: ModelProxy[DisplayModel]) = component(proxy)
+  def apply(props: Props) = component(props)
 
 }
