@@ -1,5 +1,11 @@
 FROM nginx
 
+RUN apt-get update && apt-get install dnsmasq -y
+RUN echo "user=root" >> /etc/dnsmasq.conf && \
+    echo "address=/.dev/127.0.0.1" >> /etc/dnsmasq.conf
+RUN update-rc.d dnsmasq enable
+RUN service dnsmasq restart
+
 RUN rm /etc/nginx/conf.d/default.conf
 
 COPY deploy/nginx.conf /etc/nginx

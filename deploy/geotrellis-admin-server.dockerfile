@@ -2,7 +2,7 @@ FROM moradology/centos-spark-assembly:latest
 
 MAINTAINER Nathan Zimmerman
 
-ENV JAVA_OPTS -Xms128m -Xmx512m -XX:MaxPermSize=300m -ea
+ENV JAVA_OPTS -Xms128m -Xmx2g -ea
 ENV GT_HOSTNAME 0.0.0.0
 ENV GT_PORT 8080
 ENV SPARK_MASTER local[*]

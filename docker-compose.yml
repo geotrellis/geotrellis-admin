@@ -1,15 +1,17 @@
-version: '2'
-services:
-  gtAdminServer:
-    image: moradology/geotrellis-admin-server
-    ports:
-      - "8080:8080"
-    volumes:
-      - ~/.aws:/root/.aws
-  gtAdminClient:
-    image: moradology/geotrellis-admin-client
-    ports:
-      - "80:80"
-    links:
-      - gtAdminServer:geotrellis.admin.server
+#version: '1'
+adminclient:
+  image: moradology/geotrellis-admin-client:latest
+  ports:
+    - "8090:8090"
+  links:
+    - adminserver:geotrellis.admin.server
+adminserver:
+  image: moradology/geotrellis-admin-server:latest
+  environment: # Set your S3 bucket and S3 key here
+    - S3_BUCKET=azavea-datahub
+    - S3_KEY=catalog
+  ports:
+    - "8080:8080"
+  volumes:
+    - ~/.aws:/root/.aws
 
