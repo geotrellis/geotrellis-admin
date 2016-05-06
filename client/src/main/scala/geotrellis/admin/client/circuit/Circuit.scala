@@ -62,7 +62,7 @@ class LeafletHandler[M](modelRW: ModelRW[M, LeafletModel]) extends ActionHandler
         layerName <- currentLayerName.value
         colorRamp <- currentColorRamp.value
         breaks <- currentBreaks.value.toOption
-      } yield s"""http://0.0.0.0:8080/gt/tms/${layerName}/{z}/{x}/{y}?colorRamp=${colorRamp}&breaks=${breaks.mkString(",")}"""
+      } yield s"""/gt/tms/${layerName}/{z}/{x}/{y}?colorRamp=${colorRamp}&breaks=${breaks.mkString(",")}"""
 
       updated(value.copy(url = urlTemplate))
     }
