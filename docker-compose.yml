@@ -9,8 +9,8 @@ services:
   adminserver:
     image: moradology/geotrellis-admin-server:latest
     environment: # Set your S3 bucket and S3 key here
-      - S3_BUCKET=
-      - S3_KEY=
+      - S3_BUCKET=azavea-datahub
+      - S3_KEY=catalog
     ports:
       - "8080:8080"
     volumes:

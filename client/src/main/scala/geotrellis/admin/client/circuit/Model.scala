@@ -19,7 +19,7 @@ case class RootModel(
 )
 case class LayerModel(layers: Pot[Array[LayerDescription]] = Empty, selection: Option[LayerDescription] = None)
 case class ColorModel(ramp: Option[String] = None, opacity: Int = 100)
-case class BreaksModel(breaks: Pot[Array[Double]] = Empty, breaksCount: Option[Int] = None)
+case class BreaksModel(breaks: Pot[String] = Empty, breaksCount: Option[Int] = None)
 
 case class LeafletModel(url: Option[String] = None, zoom: Option[Int] = None)
 case class DisplayModel(
@@ -42,7 +42,7 @@ case class SetOpacity(opacity: Int)
 
 case object RefreshBreaks
 case class SelectBreaksCount(breaks: Option[Int])
-case class UpdateBreaks(breaks: Pot[Array[Double]] = Empty)
+case class UpdateBreaks(breaks: Pot[String] = Empty)
 
 case object UpdateDisplay
 case object UpdateDisplayLayer

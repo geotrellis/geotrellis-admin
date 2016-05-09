@@ -1,5 +1,14 @@
 package geotrellis.admin.server
 
+import akka.actor._
+import org.apache.accumulo.core.client.security.tokens.PasswordToken
+import org.apache.spark.{SparkConf, SparkContext}
+import spray.http._
+import spray.httpx.SprayJsonSupport._
+import spray.json._
+import spray.routing._
+import spray.caching._
+
 import geotrellis.admin.server.util.AvroRegistrator
 import geotrellis.proj4.{LatLng, WebMercator}
 import geotrellis.raster._
@@ -15,13 +24,6 @@ import geotrellis.vector.Polygon
 import geotrellis.vector.reproject._
 import geotrellis.admin.server.util._
 
-import akka.actor._
-import org.apache.accumulo.core.client.security.tokens.PasswordToken
-import org.apache.spark.{SparkConf, SparkContext}
-import spray.http._
-import spray.httpx.SprayJsonSupport._
-import spray.json._
-import spray.routing._
 
 class GeotrellisAdminServiceActor extends Actor with GeotrellisAdminService{
   val conf = AvroRegistrator(
@@ -58,6 +60,8 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
   def tileReader(id: LayerId): Reader[SpatialKey, Tile]
 
   val baseZoomLevel = 4
+
+  val breaksStore: Cache[Array[Double]] = LruCache()
 
   def layerId(layer: String): LayerId =
     LayerId(layer, baseZoomLevel)
@@ -118,9 +122,12 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
     import DefaultJsonProtocol._
     complete {
       val data = reader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](layerId(layer))
-      val doubleBreaks = data.classBreaksDouble(numBreaks)
 
-      JsObject("classBreaks" -> doubleBreaks.toJson)
+      val breaks = data.classBreaksDouble(numBreaks)
+      val uuid = java.util.UUID.randomUUID.toString
+      breaksStore(uuid)(breaks)
+
+      JsObject("classBreaks" -> JsString(uuid))
     }
   }
 
@@ -200,11 +207,12 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
                   ColorMap.Options.DEFAULT.copy(noDataColor = java.lang.Long.parseLong(c, 16).toInt)
                 case _ => ColorMap.Options.DEFAULT
               }
-              val colorMap =  {
-                val breaks = breaksParam.split(",").map(_.toDouble)
-                ramp.toColorMap(breaks, colorOptions)
+              breaksStore.get(breaksParam).get.map { b: Array[Double] =>
+                val colorMap =  {
+                  ramp.toColorMap(b, colorOptions)
+                }
+                tile.renderPng(colorMap).bytes
               }
-              tile.renderPng(colorMap).bytes
             }
           }
         }

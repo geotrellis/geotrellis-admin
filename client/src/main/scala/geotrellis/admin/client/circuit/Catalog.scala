@@ -13,7 +13,7 @@ object Catalog {
   val currentLayerName: ModelR[RootModel, Option[String]] = AppCircuit.zoom(_.displayM.layer.map(_.name))
   val currentColorRamp: ModelR[RootModel, Option[String]] = AppCircuit.zoom(_.displayM.ramp)
   val currentBreaksCount: ModelR[RootModel, Option[Int]] = AppCircuit.zoom(_.displayM.breaksCount)
-  val currentBreaks: ModelR[RootModel, Pot[Array[Double]]] = AppCircuit.zoom(_.breaksM.breaks)
+  val currentBreaks: ModelR[RootModel, Pot[String]] = AppCircuit.zoom(_.breaksM.breaks)
   val currentOpacity: ModelR[RootModel, Option[Int]] = AppCircuit.zoom(_.displayM.opacity)
   val currentZoomLevel: ModelR[RootModel, Option[Int]] = AppCircuit.zoom(_.displayM.leafletM.zoom)
 

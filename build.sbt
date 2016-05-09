@@ -26,6 +26,7 @@ lazy val serverSettings = Seq(
     "com.azavea.geotrellis" %% "geotrellis-raster"        % "0.10.0",
     "org.apache.spark"      %% "spark-core"               % "1.5.2" % "provided",
     "io.spray"              %% "spray-routing"            % "1.3.3",
+    "io.spray"              %% "spray-caching"            % "1.3.3",
     "io.spray"              %% "spray-can"                % "1.3.3",
     "org.scalatest"         %%  "scalatest"               % "2.2.0" % "test"
   ),
