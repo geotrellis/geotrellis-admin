@@ -12,6 +12,5 @@ COPY deploy/client_entry.sh /opt/client_entry.sh
 
 RUN rm /etc/nginx/conf.d/default.conf
 ADD deploy/nginx.conf /etc/nginx
-ENTRYPOINT [ "/opt/client_entry.sh" ]
 
 EXPOSE 8090

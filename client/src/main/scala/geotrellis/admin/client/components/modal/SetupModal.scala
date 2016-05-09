@@ -31,6 +31,10 @@ object SetupModal {
 
   class Backend($: BackendScope[Props, State]) {
 
+    def onLayerSelect(ld: Option[LayerDescription]) = {
+      $.modState(_.copy(layer = ld))
+    }
+
     def render(props: Props) = {
       <.div(
         Modal(

@@ -1,8 +1,7 @@
 package geotrellis.admin.server
 
-import akka.actor.Props
+import akka.actor.{ActorSystem, Props}
 import akka.io.IO
-import akka.actor.ActorSystem
 import spray.can.Http
 
 object Main {
@@ -10,7 +9,7 @@ object Main {
     implicit val system = ActorSystem("geotrellis-admin-server")
     val host = sys.env("GT_HOSTNAME")
     val port = sys.env("GT_PORT").toInt
-    val service = system.actorOf(Props(classOf[GeotrellisAdminServiceActor]), "geotrellis-admin-service")
+    val service = system.actorOf(Props[GeotrellisAdminServiceActor], "geotrellis-admin-service")
 
     IO(Http) ! Http.Bind(service, host, port)
   }

@@ -35,8 +35,8 @@ object LeafletMap {
 
   val defaultMapOptions =
     LMapOptions
-      .center(LLatLng(40.75583970971843, -73.795166015625))
-      .zoom(AppCircuit.zoom(_.displayM.leafletM.zoom).value.getOrElse(5))
+      .center(LLatLng(41.850033, -87.6500523))
+      .zoom(AppCircuit.zoom(_.displayM.leafletM.zoom).value.getOrElse(2))
       .result
 
   def tileLayerOpts(minZoom: Int, maxZoom: Int) =
@@ -51,15 +51,12 @@ object LeafletMap {
     for {
       layer <- displayModel.layer
       template <- displayModel.leafletM.url
-      initZoom <- displayModel.leafletM.zoom
       minZoom = layer.availableZooms.min
       maxZoom = layer.availableZooms.max
     } yield {
       if (!js.isUndefined(gtLayer)) lmap.get.removeLayer(gtLayer.get)
       gtLayer = LTileLayer(template, tileLayerOpts(minZoom, maxZoom))
       gtLayer.get.addTo(lmap.get)
-
-      lmap.get.setZoom(initZoom)
     }
   }
 

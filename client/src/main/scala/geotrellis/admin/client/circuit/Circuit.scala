@@ -14,6 +14,7 @@ import scala.scalajs.js.JSON
 import scala.concurrent.ExecutionContext.Implicits.global
 
 import geotrellis.admin.shared._
+import geotrellis.admin.client._
 import Catalog._
 
 /** Display actions */
@@ -62,7 +63,7 @@ class LeafletHandler[M](modelRW: ModelRW[M, LeafletModel]) extends ActionHandler
         layerName <- currentLayerName.value
         colorRamp <- currentColorRamp.value
         breaks <- currentBreaks.value.toOption
-      } yield s"""/gt/tms/${layerName}/{z}/{x}/{y}?colorRamp=${colorRamp}&breaks=${breaks.mkString(",")}"""
+      } yield SiteConfig.adminHostUrl(s"""/gt/tms/${layerName}/{z}/{x}/{y}?colorRamp=${colorRamp}&breaks=${breaks.mkString(",")}""")
 
       updated(value.copy(url = urlTemplate))
     }

@@ -26,6 +26,8 @@ import geotrellis.admin.client.circuit._
 
 object GeotrellisAdminViewer {
 
+  object Style extends StyleSheet.Inline {}
+
   case class State(showModal: Boolean = true)
 
   class Backend($: BackendScope[ModelProxy[DisplayModel], State]) {
@@ -42,11 +44,13 @@ object GeotrellisAdminViewer {
         <.div(
           ^.className := "sidebar",
           <.button(
-            BootstrapStyles.buttonDefault,
+            BootstrapStyles.buttonDefaultBlock,
             ^.onClick --> $.modState(_.copy(showModal = true)),
             "Settings"
           ),
-          AppCircuit.connect(_.displayM)(InfoPanel(_))
+          <.div(
+            AppCircuit.connect(_.displayM)(InfoPanel(_))
+          )
         ),
         if (state.showModal) SetupModal(SetupModal.Props(onModalAccept, onModalClose))
         else Seq.empty[ReactElement]

@@ -65,24 +65,19 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
   def getMetaData(id: LayerId): TileLayerMetadata[SpatialKey] =
     attributeStore.readMetadata[TileLayerMetadata[SpatialKey]](id)
 
-  def serviceRoute = cors {
-    get {
-      pathPrefix("gt") {
-        pathPrefix("errorTile")(errorTile) ~
-        pathPrefix("bounds")(bounds) ~
-        pathPrefix("metadata")(metadata) ~
-        pathPrefix("layers")(layers) ~
-        pathPrefix("tms")(tms) ~
-        pathPrefix("breaks")(breaks)
-      } ~
-      pathEndOrSingleSlash {
-        getFromResource("geotrellis/viewer/index.html")
-      } ~
-      pathPrefix("") {
-        getFromResourceDirectory("geotrellis/viewer")
+  def serviceRoute =
+    cors {
+      get {
+        pathPrefix("gt") {
+          pathPrefix("errorTile")(errorTile) ~
+          pathPrefix("bounds")(bounds) ~
+          pathPrefix("metadata")(metadata) ~
+          pathPrefix("layers")(layers) ~
+          pathPrefix("tms")(tms) ~
+          pathPrefix("breaks")(breaks)
+        }
       }
     }
-  }
 
   case class LayerDescription(name: String, availableZooms: Seq[Int])
   object EndpointProtocol extends DefaultJsonProtocol {
@@ -97,9 +92,11 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
 
   def bounds = pathPrefix(Segment / IntNumber) { (layerName, zoom) =>
     import EndpointProtocol._
-    val data = reader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId(layerName, zoom))
-    val bounds = data.metadata.gridBounds
-    complete(bounds)
+    complete {
+      val data = reader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId(layerName, zoom))
+      val bounds = data.metadata.gridBounds
+      bounds
+    }
   }
 
   def layers = {
@@ -112,22 +109,19 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
   def metadata = pathPrefix(Segment / IntNumber) { (layerName, zoom) =>
     complete {
       val layer = LayerId(layerName, zoom)
-      val metad = getMetaData(layer)
-      println(metad)
-      metad
+      val metadata = getMetaData(layer)
+      metadata
     }
   }
 
   def breaks = pathPrefix(Segment / IntNumber) { (layer, numBreaks) =>
     import DefaultJsonProtocol._
+    complete {
+      val data = reader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](layerId(layer))
+      val doubleBreaks = data.classBreaksDouble(numBreaks)
 
-    val data = (reader
-      .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](layerId(layer))
-    )
-
-    val doubleBreaks = data.classBreaksDouble(numBreaks)
-
-    complete(JsObject("classBreaks" -> doubleBreaks.toJson))
+      JsObject("classBreaks" -> doubleBreaks.toJson)
+    }
   }
 
   val missingTileHandler = ExceptionHandler {
@@ -140,40 +134,48 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
     pathPrefix(Segment / IntNumber / IntNumber / IntNumber) { (layer, zoom, x, y) =>
       val key = SpatialKey(x, y)
 
-      val extent = getMetaData(LayerId(layer, zoom)).mapTransform(key)
-      val tile = tileReader(LayerId(layer, zoom)).read(key)
-
       {
         import DefaultJsonProtocol._
         pathPrefix("grid") {
-          complete(tile.asciiDrawDouble())
+          complete {
+            val tile = tileReader(LayerId(layer, zoom)).read(key)
+            tile.asciiDrawDouble()
+          }
         } ~
         pathPrefix("type") {
-          complete(tile.getClass.getName)
+          complete {
+            val tile = tileReader(LayerId(layer, zoom)).read(key)
+            tile.getClass.getName
+          }
         } ~
         pathPrefix("breaks") {
-          complete(JsObject("classBreaks" -> tile.classBreaksDouble(100).toJson))
+          complete {
+            val tile = tileReader(LayerId(layer, zoom)).read(key)
+            JsObject("classBreaks" -> tile.classBreaksDouble(100).toJson)
+          }
         } ~
         pathPrefix("histo") {
-          val histo = tile.histogram
-          val histoD = tile.histogramDouble
-          val formattedHisto = {
-            val buff = scala.collection.mutable.Buffer.empty[(Int, Long)]
-            histo.foreach((v, c) => buff += ((v, c)))
-            buff.to[Vector]
+          complete {
+            val tile = tileReader(LayerId(layer, zoom)).read(key)
+            val histo = tile.histogram
+            val histoD = tile.histogramDouble
+            val formattedHisto = {
+              val buff = scala.collection.mutable.Buffer.empty[(Int, Long)]
+              histo.foreach((v, c) => buff += ((v, c)))
+              buff.to[Vector]
+            }
+            val formattedHistoD = {
+              val buff = scala.collection.mutable.Buffer.empty[(Double, Long)]
+              histoD.foreach((v, c) => buff += ((v, c)))
+              buff.to[Vector]
+            }
+              JsObject("histo" -> formattedHisto.toJson,
+                "histoDouble" -> formattedHistoD.toJson)
           }
-          val formattedHistoD = {
-            val buff = scala.collection.mutable.Buffer.empty[(Double, Long)]
-            histoD.foreach((v, c) => buff += ((v, c)))
-            buff.to[Vector]
-          }
-          complete(
-            JsObject("histo" -> formattedHisto.toJson,
-              "histoDouble" -> formattedHistoD.toJson)
-          )
         } ~
         pathPrefix("stats") {
           complete {
+            val tile = tileReader(LayerId(layer, zoom)).read(key)
             JsObject(
               "statistics" -> tile.statistics.toString.toJson,
               "statisticsDouble" -> tile.statisticsDouble.toString.toJson)
@@ -186,24 +188,24 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
           'nodataColor ?,
           'colorRamp ? "blue-to-red"
         ) { (breaksParam, nodataColor, colorRamp) =>
-
           import geotrellis.raster._
-
-          val ramp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed)
-          val Color = """0x(\p{XDigit}{8})""".r
-          val colorOptions = nodataColor match {
-            case Some(Color(c)) =>
-              ColorMap.Options.DEFAULT.copy(noDataColor = java.lang.Long.parseLong(c, 16).toInt)
-            case _ => ColorMap.Options.DEFAULT
-          }
-          val colorMap =  {
-            val breaks = breaksParam.split(",").map(_.toDouble)
-            ramp.toColorMap(breaks, colorOptions)
-          }
-
           respondWithMediaType(MediaTypes.`image/png`) {
-            val result = tile.renderPng(colorMap).bytes
-            complete(result)
+            complete {
+              val tile = tileReader(LayerId(layer, zoom)).read(key)
+
+              val ramp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed)
+              val Color = """0x(\p{XDigit}{8})""".r
+              val colorOptions = nodataColor match {
+                case Some(Color(c)) =>
+                  ColorMap.Options.DEFAULT.copy(noDataColor = java.lang.Long.parseLong(c, 16).toInt)
+                case _ => ColorMap.Options.DEFAULT
+              }
+              val colorMap =  {
+                val breaks = breaksParam.split(",").map(_.toDouble)
+                ramp.toColorMap(breaks, colorOptions)
+              }
+              tile.renderPng(colorMap).bytes
+            }
           }
         }
       }

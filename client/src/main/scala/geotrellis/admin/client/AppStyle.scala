@@ -8,6 +8,7 @@ import scalacss.mutable.GlobalRegistry
 import geotrellis.admin.client.components.map._
 import geotrellis.admin.client.components.modal._
 import geotrellis.admin.client.components.sidebar._
+import geotrellis.admin.client.routes._
 import geotrellis.admin.client.components._
 
 object AppCSS {
@@ -17,6 +18,7 @@ object AppCSS {
 
   def load() = {
     registry.register(
+      GeotrellisAdminViewer.Style,
       ColorRampList.Style,
       InfoPanel.Style,
       BootstrapStyles

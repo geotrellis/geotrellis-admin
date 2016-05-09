@@ -5,7 +5,7 @@ import diode.react._
 import diode.data.Pot
 import diode.react.ReactPot._
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.extra.router._
+import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import chandu0101.scalajs.react.components.reactselect._
 import chandu0101.scalajs.react.components._
@@ -72,7 +72,6 @@ object LayerForm {
       val layerIndex: Int = selection.value.asInstanceOf[Int]
 
       $.modState(_.copy(value = value)) >>
-        Callback.info(selection) >>
         $.props >>= { (props: Props) => props.onSelect(Try(props.options(layerIndex)).toOption) }
     }
 

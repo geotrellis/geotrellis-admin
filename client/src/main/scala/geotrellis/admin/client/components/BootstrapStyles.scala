@@ -22,6 +22,8 @@ object BootstrapStyles extends StyleSheet.Inline {
 
   val buttonDefault = styleWrap("btn btn-default")
 
+  val buttonDefaultBlock = styleWrap("btn btn-default btn-block")
+
   val button = buttonOpt(default)
 
   val panelOpt = commonStyle(csDomain, "panel")
