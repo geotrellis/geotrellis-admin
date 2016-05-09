@@ -192,9 +192,10 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
       pathEnd {
         parameters(
           'breaks,
+          'opacity ? 100.0,
           'nodataColor ?,
           'colorRamp ? "blue-to-red"
-        ) { (breaksParam, nodataColor, colorRamp) =>
+        ) { (breaksParam, opacityParam, nodataColor, colorRamp) =>
           import geotrellis.raster._
           respondWithMediaType(MediaTypes.`image/png`) {
             complete {
@@ -209,7 +210,9 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
               }
               breaksStore.get(breaksParam).get.map { b: Array[Double] =>
                 val colorMap =  {
-                  ramp.toColorMap(b, colorOptions)
+                  ramp
+                    .setAlpha(opacityParam)
+                    .toColorMap(b, colorOptions)
                 }
                 tile.renderPng(colorMap).bytes
               }

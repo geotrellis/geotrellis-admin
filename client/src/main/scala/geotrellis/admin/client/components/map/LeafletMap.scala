@@ -60,31 +60,25 @@ object LeafletMap {
     }
   }
 
-  def baseLayerOpts(maxZoom: Int, attrib: String) =
+  def mapboxLayerOpts =
     LTileLayerOptions
-      .maxZoom(maxZoom)
-      .attribution(attrib)
+      .attribution("Map data &copy; <a href=\"http://openstreetmap.org\">OpenStreetMap</a> contributors, <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery &copy; <a href=\"http://mapbox.com\">MapBox</a>")
       .result
 
-  val layers = Map(
-    "stamen" -> Map(
-      "toner_lite" -> "http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-      "terrain" -> "http://{s}.tile.stamen.com/terrain/{z}/{x}/{y}.png",
-      "watercolor" -> "http://{s}.tile.stamen.com/watercolor/{z}/{x}/{y}.png",
-      "attrib" -> "Map tiles by <a href=\"http://stamen.com\">Stamen Design</a>, <a href=\"http://creativecommons.org/licenses/by/3.0\">CC BY 3.0</a> &mdash; Map data &copy; <a href=\"http://www.openstreetmap.org/copyright\">OpenStreetMap</a>"
-    ),
-    "mapbox" -> Map(
-      "azavea" -> "http://{s}.tiles.mapbox.com/v3/azavea.map-zbompf85/{z}/{x}/{y}.png",
-      "worldGlass" -> "http://{s}.tiles.mapbox.com/v3/mapbox.world-glass/{z}/{x}/{y}.png",
-      "worldBlank" -> "http://{s}.tiles.mapbox.com/v3/mapbox.world-blank-light/{z}/{x}/{y}.png",
-      "worldLight" -> "http://{s}.tiles.mapbox.com/v3/mapbox.world-light/{z}/{x}/{y}.png",
-      "attrib" -> "Map data &copy; <a href=\"http://openstreetmap.org\">OpenStreetMap</a> contributors, <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery &copy; <a href=\"http://mapbox.com\">MapBox</a>"
-    )
-  )
+  def stamenLayerOpts =
+    LTileLayerOptions
+      .attribution("Map tiles by <a href=\"http://stamen.com\">Stamen Design</a>, <a href=\"http://creativecommons.org/licenses/by/3.0\">CC BY 3.0</a> &mdash; Map data &copy; <a href=\"http://www.openstreetmap.org/copyright\">OpenStreetMap</a>")
+      .result
 
-  def getLayer(url: String, attrib: String): LTileLayer = {
-    LTileLayer(url, baseLayerOpts(18, attrib));
-  };
+  val baseLayers = Map(
+    "toner_lite" -> LTileLayer("http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", stamenLayerOpts),
+    "terrain" -> LTileLayer("http://{s}.tile.stamen.com/terrain/{z}/{x}/{y}.png", stamenLayerOpts),
+    "watercolor" -> LTileLayer("http://{s}.tile.stamen.com/watercolor/{z}/{x}/{y}.png", stamenLayerOpts),
+    "azavea" -> LTileLayer("http://{s}.tiles.mapbox.com/v3/azavea.map-zbompf85/{z}/{x}/{y}.png", mapboxLayerOpts),
+    "worldGlass" -> LTileLayer("http://{s}.tiles.mapbox.com/v3/mapbox.world-glass/{z}/{x}/{y}.png", mapboxLayerOpts),
+    "worldBlank" -> LTileLayer("http://{s}.tiles.mapbox.com/v3/mapbox.world-blank-light/{z}/{x}/{y}.png", mapboxLayerOpts),
+    "worldLight" -> LTileLayer("http://{s}.tiles.mapbox.com/v3/mapbox.world-light/{z}/{x}/{y}.png", mapboxLayerOpts)
+  )
 
   class Backend($: BackendScope[ModelProxy[LeafletModel], Unit]) extends OnUnmount {
     val sOnZoom = { e: LDragEndEvent => Callback.info(e) }
@@ -96,7 +90,7 @@ object LeafletMap {
           { proxy: ModelProxy[LeafletModel] => proxy.dispatch(UpdateZoomLevel(Some(lmap.get.getZoom()))) }
         ).runNow()
       })
-      getLayer(layers("stamen")("toner_lite"), layers("stamen")("attrib")).addTo(lmap.get)
+      baseLayers("toner_lite").addTo(lmap.get)
     }
 
     def render() =

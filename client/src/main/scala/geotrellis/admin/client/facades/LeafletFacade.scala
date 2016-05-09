@@ -848,6 +848,7 @@ class LTileLayer extends LILayer {
   def getContainer(): HTMLElement = js.native
 
   def wms(baseurl: String, options: LTileLayerWMSOptions): LTileLayerWMS = js.native
+
 }
 
 object LTileLayer {

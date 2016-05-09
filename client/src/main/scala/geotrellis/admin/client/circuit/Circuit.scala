@@ -63,7 +63,8 @@ class LeafletHandler[M](modelRW: ModelRW[M, LeafletModel]) extends ActionHandler
         layerName <- currentLayerName.value
         colorRamp <- currentColorRamp.value
         breaks <- currentBreaks.value.toOption
-      } yield SiteConfig.adminHostUrl(s"""/gt/tms/${layerName}/{z}/{x}/{y}?colorRamp=${colorRamp}&breaks=${breaks}""")
+        opacity <- currentOpacity.value
+      } yield SiteConfig.adminHostUrl(s"""/gt/tms/${layerName}/{z}/{x}/{y}?colorRamp=${colorRamp}&breaks=${breaks}&opacity=${opacity}""")
 
       updated(value.copy(url = urlTemplate))
     }
