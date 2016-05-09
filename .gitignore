@@ -31,3 +31,5 @@ _SUCCESS
 # static file build artifacts
 node_modules
 assets
+
+docker-compose.yml
