@@ -36,24 +36,11 @@ object LeafletMap {
     "worldLight" -> LTileLayer("http://{s}.tiles.mapbox.com/v3/mapbox.world-light/{z}/{x}/{y}.png", mapboxLayerOpts)
   )
 
-  var lmap: js.UndefOr[LMap] =
-    js.undefined
-
-  var gtLayer: js.UndefOr[LTileLayer] =
-    js.undefined
-
   val defaultMapOptions =
     LMapOptions
       .center(LLatLng(41.850033, -87.6500523))
       .zoom(AppCircuit.zoom(_.displayM.leafletM.zoom).value.getOrElse(2))
       .layers(js.Array(baseLayers("toner_lite")))
-      .result
-
-  def tileLayerOpts(minZoom: Int, maxZoom: Int) =
-    LTileLayerOptions
-      .errorTileUrl(SiteConfig.adminHostUrl("/gt/errorTile"))
-      .minZoom(minZoom)
-      .maxZoom(maxZoom)
       .result
 
   def mapboxLayerOpts =
@@ -66,22 +53,7 @@ object LeafletMap {
       .attribution("Map tiles by <a href=\"http://stamen.com\">Stamen Design</a>, <a href=\"http://creativecommons.org/licenses/by/3.0\">CC BY 3.0</a> &mdash; Map data &copy; <a href=\"http://www.openstreetmap.org/copyright\">OpenStreetMap</a>")
       .result
 
-  def updateMap = Callback {
-    val displayModel = AppCircuit.zoom(_.displayM).value
-    for {
-      layer <- displayModel.layer
-      template <- displayModel.leafletM.url
-      theMap <- lmap.toOption
-      minZoom = layer.availableZooms.min
-      maxZoom = layer.availableZooms.max
-    } yield {
-      gtLayer.map(theMap.removeLayer(_))
-      gtLayer =
-        LTileLayer(template, tileLayerOpts(minZoom, maxZoom)).addTo(theMap)
-    }
-  }
-
-  class Backend($: BackendScope[ModelProxy[LeafletModel], Unit]) extends OnUnmount {
+  class Backend($: BackendScope[ModelProxy[LeafletModel], Unit]) {
 
     def init =
       ($.props >>= { props: ModelProxy[LeafletModel] =>
@@ -104,7 +76,6 @@ object LeafletMap {
   private val leafletMap = ReactComponentB[ModelProxy[LeafletModel]]("LeafletMap")
     .renderBackend[Backend]
     .componentDidMount(_.backend.init)
-    .componentDidUpdate(_ => updateMap)
     .build
 
   def apply(props: ModelProxy[LeafletModel]) = leafletMap(props)

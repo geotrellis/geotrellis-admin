@@ -24,7 +24,11 @@ case class LayerModel(layers: Pot[Array[LayerDescription]] = Empty, selection: O
 case class ColorModel(ramp: Option[String] = None, opacity: Int = 100)
 case class BreaksModel(breaks: Pot[String] = Empty, breaksCount: Option[Int] = None)
 
-case class LeafletModel(url: Option[String] = None, zoom: Option[Int] = None, lmap: js.UndefOr[LMap] = js.undefined) {
+case class LeafletModel(
+  zoom: Option[Int] = None,
+  lmap: Option[LMap] = None,
+  gtLayer: Option[LTileLayer] = None
+) {
   def tileLayerOpts(minZoom: Int, maxZoom: Int) =
     LTileLayerOptions
       .errorTileUrl(SiteConfig.adminHostUrl("/gt/errorTile"))

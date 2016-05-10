@@ -57,12 +57,13 @@ class DisplayHandler[M](modelRW: ModelRW[M, DisplayModel]) extends ActionHandler
 
 /** Leaflet handler */
 class LeafletHandler[M](modelRW: ModelRW[M, LeafletModel]) extends ActionHandler(modelRW) {
+  import scala.util.Try
   override def handle = {
     case InitLMap(elemID: String, mapOpts: LMapOptions) =>
-      updated(value.copy(lmap = Leaflet.map(elemID, mapOpts)))
+      updated(value.copy(lmap = Try(Leaflet.map(elemID, mapOpts)).toOption))
     case UpdateTileLayer => {
       val displayModel = AppCircuit.zoom(_.displayM).value
-      val urlTemplate = for {
+      val gtLayer = for {
         layer <- displayModel.layer
         colorRamp <- displayModel.ramp
         breaks <- currentBreaks.value.toOption
@@ -70,13 +71,18 @@ class LeafletHandler[M](modelRW: ModelRW[M, LeafletModel]) extends ActionHandler
         minZoom = layer.availableZooms.min
         maxZoom = layer.availableZooms.max
       } yield {
+        value.lmap.foreach { lmap: LMap =>
+          value.gtLayer.foreach(lmap.removeLayer(_))
+          //lmap.setZoom(minZoom)
+        }
+        value.gtLayer.foreach(value.lmap.get.removeLayer(_))
         val url = SiteConfig.adminHostUrl(s"""/gt/tms/${layer.name}/{z}/{x}/{y}?colorRamp=${colorRamp}&breaks=${breaks}&opacity=${opacity}""")
-        val gtLayer = LTileLayer(url, value.tileLayerOpts(minZoom, maxZoom))
-        value.lmap.map { gtLayer.addTo(_) }
-        url
+        val newLayer = LTileLayer(url, value.tileLayerOpts(minZoom, maxZoom))
+        value.lmap.map { newLayer.addTo(_) }
+        newLayer
       }
 
-      updated(value.copy(url = urlTemplate))
+      updated(value.copy(gtLayer = gtLayer))
     }
     case UpdateZoomLevel(zl) =>
       updated(value.copy(zoom = zl), Effect.action(CollectMetadata))
