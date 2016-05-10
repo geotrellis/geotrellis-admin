@@ -9,6 +9,8 @@ import spray.json._
 import spray.routing._
 import spray.caching._
 
+import scala.concurrent.Future
+
 import geotrellis.admin.server.util.AvroRegistrator
 import geotrellis.proj4.{LatLng, WebMercator}
 import geotrellis.raster._
@@ -62,12 +64,15 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
   val baseZoomLevel = 4
 
   val breaksStore: Cache[Array[Double]] = LruCache()
+  val metadataStore: Cache[TileLayerMetadata[SpatialKey]] = LruCache()
 
   def layerId(layer: String): LayerId =
     LayerId(layer, baseZoomLevel)
 
-  def getMetaData(id: LayerId): TileLayerMetadata[SpatialKey] =
+  // TODO think about the performance of using a string for the key
+  def getMetadata(id: LayerId): Future[TileLayerMetadata[SpatialKey]] = metadataStore(s"${id.name}/${id.zoom}") {
     attributeStore.readMetadata[TileLayerMetadata[SpatialKey]](id)
+  }
 
   def serviceRoute =
     cors {
@@ -113,8 +118,7 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
   def metadata = pathPrefix(Segment / IntNumber) { (layerName, zoom) =>
     complete {
       val layer = LayerId(layerName, zoom)
-      val metadata = getMetaData(layer)
-      metadata
+      getMetadata(layer)
     }
   }
 
@@ -199,22 +203,28 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
           import geotrellis.raster._
           respondWithMediaType(MediaTypes.`image/png`) {
             complete {
-              val tile = tileReader(LayerId(layer, zoom)).read(key)
+              getMetadata(LayerId(layer, zoom)).flatMap { md: TileLayerMetadata[SpatialKey] =>
+                if (md.bounds.includes(key)) {
+                  val tile = tileReader(LayerId(layer, zoom)).read(key)
 
-              val ramp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed)
-              val Color = """0x(\p{XDigit}{8})""".r
-              val colorOptions = nodataColor match {
-                case Some(Color(c)) =>
-                  ColorMap.Options.DEFAULT.copy(noDataColor = java.lang.Long.parseLong(c, 16).toInt)
-                case _ => ColorMap.Options.DEFAULT
-              }
-              breaksStore.get(breaksParam).get.map { b: Array[Double] =>
-                val colorMap =  {
-                  ramp
-                    .setAlpha(opacityParam)
-                    .toColorMap(b, colorOptions)
-                }
-                tile.renderPng(colorMap).bytes
+                  val ramp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed)
+                  val Color = """0x(\p{XDigit}{8})""".r
+                  val colorOptions = nodataColor match {
+                    case Some(Color(c)) =>
+                      ColorMap.Options.DEFAULT.copy(noDataColor = java.lang.Long.parseLong(c, 16).toInt)
+                    case _ => ColorMap.Options.DEFAULT
+                  }
+                  breaksStore.get(breaksParam).map { fut: Future[Array[Double]] =>
+                    fut.map { b: Array[Double] =>
+                      val colorMap =  {
+                        ramp
+                          .setAlpha(opacityParam)
+                          .toColorMap(b, colorOptions)
+                      }
+                      tile.renderPng(colorMap).bytes
+                    } // TODO make this less inelegant
+                  }.getOrElse(Future.successful(util.ErrorTile()))
+                } else Future.successful(util.ErrorTile())
               }
             }
           }

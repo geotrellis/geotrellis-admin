@@ -82,7 +82,7 @@ class LeafletHandler[M](modelRW: ModelRW[M, LeafletModel]) extends ActionHandler
         newLayer
       }
 
-      updated(value.copy(gtLayer = gtLayer))
+      updated(value.copy(gtLayer = gtLayer), Effect.action(UpdateZoomLevel(value.zoom)))
     }
     case UpdateZoomLevel(zl) =>
       updated(value.copy(zoom = zl), Effect.action(CollectMetadata))
