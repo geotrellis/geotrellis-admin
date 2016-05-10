@@ -23,7 +23,7 @@ import geotrellis.admin.client.components.Bootstrap._
 import geotrellis.admin.client.circuit._
 import geotrellis.admin.shared._
 
-object SetupModal {
+object SettingsModal {
   @inline private def bss = BootstrapStyles
 
   case class Props(onAccept: Callback, onClose: Callback)

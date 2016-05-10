@@ -12,9 +12,7 @@ import org.scalajs.dom
 import io.circe._
 import io.circe.scalajs._
 
-import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
-
 import scala.scalajs.js
 import scala.scalajs.js.Dynamic.{literal => json}
 import scala.scalajs.js.annotation.JSName
@@ -24,51 +22,9 @@ import js.JSConverters._
 
 import geotrellis.admin.client.facades._
 import geotrellis.admin.client.circuit._
+import geotrellis.admin.client._
 
 object LeafletMap {
-
-  var lmap: js.UndefOr[LMap] =
-    js.undefined
-
-  var gtLayer: js.UndefOr[LTileLayer] =
-    js.undefined
-
-  val defaultMapOptions =
-    LMapOptions
-      .center(LLatLng(41.850033, -87.6500523))
-      .zoom(AppCircuit.zoom(_.displayM.leafletM.zoom).value.getOrElse(2))
-      .result
-
-  def tileLayerOpts(minZoom: Int, maxZoom: Int) =
-    LTileLayerOptions
-      .errorTileUrl("/gt/errorTile")
-      .minZoom(minZoom)
-      .maxZoom(maxZoom)
-      .result
-
-  def updateMap = Callback {
-    val displayModel = AppCircuit.zoom(_.displayM).value
-    for {
-      layer <- displayModel.layer
-      template <- displayModel.leafletM.url
-      minZoom = layer.availableZooms.min
-      maxZoom = layer.availableZooms.max
-    } yield {
-      if (!js.isUndefined(gtLayer)) lmap.get.removeLayer(gtLayer.get)
-      gtLayer = LTileLayer(template, tileLayerOpts(minZoom, maxZoom))
-      gtLayer.get.addTo(lmap.get)
-    }
-  }
-
-  def mapboxLayerOpts =
-    LTileLayerOptions
-      .attribution("Map data &copy; <a href=\"http://openstreetmap.org\">OpenStreetMap</a> contributors, <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery &copy; <a href=\"http://mapbox.com\">MapBox</a>")
-      .result
-
-  def stamenLayerOpts =
-    LTileLayerOptions
-      .attribution("Map tiles by <a href=\"http://stamen.com\">Stamen Design</a>, <a href=\"http://creativecommons.org/licenses/by/3.0\">CC BY 3.0</a> &mdash; Map data &copy; <a href=\"http://www.openstreetmap.org/copyright\">OpenStreetMap</a>")
-      .result
 
   val baseLayers = Map(
     "toner_lite" -> LTileLayer("http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", stamenLayerOpts),
@@ -80,18 +36,66 @@ object LeafletMap {
     "worldLight" -> LTileLayer("http://{s}.tiles.mapbox.com/v3/mapbox.world-light/{z}/{x}/{y}.png", mapboxLayerOpts)
   )
 
-  class Backend($: BackendScope[ModelProxy[LeafletModel], Unit]) extends OnUnmount {
-    val sOnZoom = { e: LDragEndEvent => Callback.info(e) }
-    val onZoom: js.Function1[LDragEndEvent, Any] = sOnZoom.asInstanceOf[js.Function1[LDragEndEvent, Any]]
-    def init = Callback {
-      lmap = Leaflet.map("map", defaultMapOptions)
-      lmap.get.onZoomend({ e: LDragEndEvent =>
-        ($.props >>=
-          { proxy: ModelProxy[LeafletModel] => proxy.dispatch(UpdateZoomLevel(Some(lmap.get.getZoom()))) }
-        ).runNow()
-      })
-      baseLayers("toner_lite").addTo(lmap.get)
+  var lmap: js.UndefOr[LMap] =
+    js.undefined
+
+  var gtLayer: js.UndefOr[LTileLayer] =
+    js.undefined
+
+  val defaultMapOptions =
+    LMapOptions
+      .center(LLatLng(41.850033, -87.6500523))
+      .zoom(AppCircuit.zoom(_.displayM.leafletM.zoom).value.getOrElse(2))
+      .layers(js.Array(baseLayers("toner_lite")))
+      .result
+
+  def tileLayerOpts(minZoom: Int, maxZoom: Int) =
+    LTileLayerOptions
+      .errorTileUrl(SiteConfig.adminHostUrl("/gt/errorTile"))
+      .minZoom(minZoom)
+      .maxZoom(maxZoom)
+      .result
+
+  def mapboxLayerOpts =
+    LTileLayerOptions
+      .attribution("Map data &copy; <a href=\"http://openstreetmap.org\">OpenStreetMap</a> contributors, <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery &copy; <a href=\"http://mapbox.com\">MapBox</a>")
+      .result
+
+  def stamenLayerOpts =
+    LTileLayerOptions
+      .attribution("Map tiles by <a href=\"http://stamen.com\">Stamen Design</a>, <a href=\"http://creativecommons.org/licenses/by/3.0\">CC BY 3.0</a> &mdash; Map data &copy; <a href=\"http://www.openstreetmap.org/copyright\">OpenStreetMap</a>")
+      .result
+
+  def updateMap = Callback {
+    val displayModel = AppCircuit.zoom(_.displayM).value
+    for {
+      layer <- displayModel.layer
+      template <- displayModel.leafletM.url
+      theMap <- lmap.toOption
+      minZoom = layer.availableZooms.min
+      maxZoom = layer.availableZooms.max
+    } yield {
+      gtLayer.map(theMap.removeLayer(_))
+      gtLayer =
+        LTileLayer(template, tileLayerOpts(minZoom, maxZoom)).addTo(theMap)
     }
+  }
+
+  class Backend($: BackendScope[ModelProxy[LeafletModel], Unit]) extends OnUnmount {
+
+    def init =
+      ($.props >>= { props: ModelProxy[LeafletModel] =>
+        props.dispatch(InitLMap("map", defaultMapOptions))
+      }) >>
+      ($.props >>= { props: ModelProxy[LeafletModel] =>
+        Callback {
+          val lmap = props().lmap.get
+          lmap.onZoomend({ e: LDragEndEvent =>
+            val zl: Int = lmap.getZoom()
+            props.dispatch(UpdateZoomLevel(Some(zl))).runNow()
+          })
+        }
+      })
 
     def render() =
       <.div(^.id := "map")
@@ -103,6 +107,6 @@ object LeafletMap {
     .componentDidUpdate(_ => updateMap)
     .build
 
-  def apply(proxy: ModelProxy[LeafletModel]) = leafletMap(proxy)
+  def apply(props: ModelProxy[LeafletModel]) = leafletMap(props)
 }
 

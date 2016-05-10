@@ -15,23 +15,23 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 import geotrellis.admin.shared._
 import geotrellis.admin.client._
+import geotrellis.admin.client.facades._
 import Catalog._
 
 /** Display actions */
 class DisplayHandler[M](modelRW: ModelRW[M, DisplayModel]) extends ActionHandler(modelRW) {
   override def handle = {
-    case UpdateDisplay => {
+    case UpdateDisplay =>
       effectOnly(
         Effect.action(UpdateDisplayLayer) + Effect.action(UpdateDisplayBreaksCount) + Effect.action(UpdateDisplayRamp) +
         Effect.action(UpdateDisplayOpacity) >>
         Effect.action(RefreshBreaks) >>
         Effect.action(UpdateTileLayer) + Effect.action(CollectMetadata)
-      )}
+      )
     case UpdateDisplayLayer => {
       val ld = AppCircuit.zoom(_.layerM.selection).value
       updated(
-        value.copy(layer = ld),
-        Effect.action(UpdateZoomLevel(ld.flatMap(_.availableZooms.headOption)))
+        value.copy(layer = ld)
       )
     }
     case UpdateDisplayRamp =>
@@ -58,19 +58,28 @@ class DisplayHandler[M](modelRW: ModelRW[M, DisplayModel]) extends ActionHandler
 /** Leaflet handler */
 class LeafletHandler[M](modelRW: ModelRW[M, LeafletModel]) extends ActionHandler(modelRW) {
   override def handle = {
+    case InitLMap(elemID: String, mapOpts: LMapOptions) =>
+      updated(value.copy(lmap = Leaflet.map(elemID, mapOpts)))
     case UpdateTileLayer => {
+      val displayModel = AppCircuit.zoom(_.displayM).value
       val urlTemplate = for {
-        layerName <- currentLayerName.value
-        colorRamp <- currentColorRamp.value
+        layer <- displayModel.layer
+        colorRamp <- displayModel.ramp
         breaks <- currentBreaks.value.toOption
-        opacity <- currentOpacity.value
-      } yield SiteConfig.adminHostUrl(s"""/gt/tms/${layerName}/{z}/{x}/{y}?colorRamp=${colorRamp}&breaks=${breaks}&opacity=${opacity}""")
+        opacity <- displayModel.opacity
+        minZoom = layer.availableZooms.min
+        maxZoom = layer.availableZooms.max
+      } yield {
+        val url = SiteConfig.adminHostUrl(s"""/gt/tms/${layer.name}/{z}/{x}/{y}?colorRamp=${colorRamp}&breaks=${breaks}&opacity=${opacity}""")
+        val gtLayer = LTileLayer(url, value.tileLayerOpts(minZoom, maxZoom))
+        value.lmap.map { gtLayer.addTo(_) }
+        url
+      }
 
       updated(value.copy(url = urlTemplate))
     }
-    case UpdateZoomLevel(zl) =>{
+    case UpdateZoomLevel(zl) =>
       updated(value.copy(zoom = zl), Effect.action(CollectMetadata))
-    }
   }
 }
 
@@ -133,11 +142,11 @@ object AppCircuit extends Circuit[RootModel] with ReactConnector[RootModel] {
   override def initialModel = RootModel()
   // combine all handlers into one
   override protected val actionHandler = composeHandlers(
-    new DisplayHandler(zoomRW(_.displayM)((root, newVal) => root.copy(displayM = newVal))),
     new LeafletHandler(
       zoomRW(_.displayM)((root, newVal) => root.copy(displayM = newVal))
         .zoomRW(_.leafletM)((display, newVal) => display.copy(leafletM = newVal))
     ),
+    new DisplayHandler(zoomRW(_.displayM)((root, newVal) => root.copy(displayM = newVal))),
     new LayerHandler(zoomRW(_.layerM)((root, newVal) => root.copy(layerM = newVal))),
     new ColorHandler(zoomRW(_.colorM)((root, newVal) => root.copy(colorM = newVal))),
     new BreaksHandler(zoomRW(_.breaksM)((root, newVal) => root.copy(breaksM = newVal)))

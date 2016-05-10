@@ -18,7 +18,6 @@ object AppCSS {
 
   def load() = {
     registry.register(
-      GeotrellisAdminViewer.Style,
       ColorRampList.Style,
       InfoPanel.Style,
       BootstrapStyles

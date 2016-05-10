@@ -29,21 +29,20 @@ import geotrellis.admin.shared._
 object LayerList {
 
   class Backend($: BackendScope[ModelProxy[LayerModel], Unit]) {
-    def onMount(proxy: ModelProxy[LayerModel]) =
-      Callback.when(proxy().layers.isEmpty)(proxy.dispatch(RefreshLayers))
+    def onMount(props: ModelProxy[LayerModel]) =
+      Callback.when(props().layers.isEmpty)(props.dispatch(RefreshLayers))
 
-    def render(proxy: ModelProxy[LayerModel]) = {
-      //println(proxy().layers)
+    def render(props: ModelProxy[LayerModel]) = {
       <.div(
         <.h3("Layer"),
-        proxy().layers.renderPending(_ > 500, _ => <.p("Loading...")),
-        proxy().layers.renderFailed(ex => <.p("Failed to load")),
-        proxy().layers.render(layers => {
+        props().layers.renderPending(_ > 500, _ => <.p("Loading...")),
+        props().layers.renderFailed(ex => <.p("Failed to load")),
+        props().layers.render(layers => {
           <.div(
             LayerForm(
               LayerForm.Props(
                 options = layers.sortBy(_.name),
-                onSelect = layer => proxy.dispatch(SelectLayer(layer))
+                onSelect = layer => props.dispatch(SelectLayer(layer))
               )
             )
           )

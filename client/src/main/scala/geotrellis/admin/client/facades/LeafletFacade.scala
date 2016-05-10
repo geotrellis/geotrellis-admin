@@ -348,7 +348,7 @@ class LMapOptionsBuilder(val dict: OptMap) extends JSOptionBuilder[LMapOptions, 
 
   def tapTolerance(v: Int) = jsOpt("tapTolerance", v)
 
-  def layers(v: js.Array[LILayer]) = jsOpt("layers", v)
+  def layers(v: js.Array[LTileLayer]) = jsOpt("layers", v)
 
   def worldCopyJump(v: Boolean) = jsOpt("worldCopyJump", v)
 

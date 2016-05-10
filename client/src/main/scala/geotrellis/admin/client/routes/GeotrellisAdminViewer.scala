@@ -17,53 +17,51 @@ import scala.scalajs.js.annotation.JSName
 import scala.scalajs.js.{UndefOr, undefined}
 import scala.scalajs.js.annotation.JSExport
 
-import geotrellis.admin.client.components._
+import geotrellis.admin.client.components.sidebar._
 import geotrellis.admin.client.components.modal._
 import geotrellis.admin.client.components.map._
-import geotrellis.admin.client.components.sidebar._
+import geotrellis.admin.client.components._
 import geotrellis.admin.client.circuit._
 
 
 object GeotrellisAdminViewer {
 
-  object Style extends StyleSheet.Inline {}
-
   case class State(showModal: Boolean = true)
 
-  class Backend($: BackendScope[ModelProxy[DisplayModel], State]) {
+  class Backend($: BackendScope[ModelProxy[RootModel], State]) {
 
     val onModalClose =
       $.modState(_.copy(showModal = false))
 
     val onModalAccept =
-        $.props >>= { proxy: ModelProxy[DisplayModel] => proxy.dispatch(UpdateDisplay) }
+        $.props >>= { proxy: ModelProxy[RootModel] => proxy.dispatch(UpdateDisplay) }
 
-    def render(props: ModelProxy[DisplayModel], state: State) = {
+    def render(props: ModelProxy[RootModel], state: State) = {
       <.div(
-        AppCircuit.connect(_.displayM.leafletM)(LeafletMap(_)),
+        AppCircuit.wrap(_.displayM.leafletM)(LeafletMap(_)),
         <.div(
           ^.className := "sidebar",
           <.button(
             BootstrapStyles.buttonDefaultBlock,
             ^.onClick --> $.modState(_.copy(showModal = true)),
-            "Settings"
+            "Layer Settings"
           ),
           <.div(
-            AppCircuit.connect(_.displayM)(InfoPanel(_))
-          )
-        ),
-        if (state.showModal) SetupModal(SetupModal.Props(onModalAccept, onModalClose))
-        else Seq.empty[ReactElement]
+            props.connect(_.displayM)(InfoPanel(_))
+          ),
+          if (state.showModal) SettingsModal(SettingsModal.Props(onModalAccept, onModalClose))
+          else Seq.empty[ReactElement]
+        )
       )
     }
   }
 
-  private val component = ReactComponentB[ModelProxy[DisplayModel]]("GeotrellisAdminClient")
+  private val component = ReactComponentB[ModelProxy[RootModel]]("GeotrellisAdminClient")
     .initialState(State())
     .renderBackend[Backend]
     .build
 
-  def apply(props: ModelProxy[DisplayModel]) = component(props)
+  def apply(props: ModelProxy[RootModel]) = component(props)
 
 }
 
