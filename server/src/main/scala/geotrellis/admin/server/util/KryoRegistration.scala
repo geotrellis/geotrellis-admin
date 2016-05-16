@@ -2,14 +2,15 @@ package geotrellis.admin.server.util
 
 import org.apache.spark.SparkConf
 import org.apache.avro.Schema
-import org.apache.avro.Schema.{Field, Type}
 
 object KryoRegistration {
   /** Register any custom classes we need to serialize. */
   def register(conf: SparkConf): SparkConf = {
-    val field = new Field("a", Schema.create(Type.NULL), null, null)
-    val classes = classOf[org.apache.avro.Schema].getDeclaredClasses
+    /* `Schema.Field` has one further subclass, and it is not included upon
+     * a `getDeclaredClasses` call on `Schema`.
+     */
+    val classes = classOf[Schema].getDeclaredClasses
 
-    conf.registerKryoClasses(field.order.getClass +: classes)
+    conf.registerKryoClasses(classOf[Schema.Field.Order] +: classes)
   }
 }
