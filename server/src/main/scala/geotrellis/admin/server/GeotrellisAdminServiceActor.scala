@@ -19,7 +19,7 @@ import spray.json._
 import spray.routing._
 
 class GeotrellisAdminServiceActor extends Actor with GeotrellisAdminService {
-  val conf: SparkConf = AvroRegistrator(
+  val conf: SparkConf = KryoRegistration.register(
     new SparkConf()
       .setMaster(sys.env("SPARK_MASTER"))
       .setAppName("geotrellis-admin")
