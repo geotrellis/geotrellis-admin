@@ -17,7 +17,7 @@ import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.routing._
 
-class GeotrellisAdminServiceActor extends Actor with GeotrellisAdminService {
+class AdminActor extends Actor with AdminRoutes {
   val conf: SparkConf = KryoRegistration.register(
     new SparkConf()
       .setMaster(sys.env("SPARK_MASTER"))
@@ -42,7 +42,7 @@ class GeotrellisAdminServiceActor extends Actor with GeotrellisAdminService {
 
 }
 
-trait GeotrellisAdminService extends HttpService with CORSSupport {
+trait AdminRoutes extends HttpService with CORSSupport {
   implicit val sparkContext: SparkContext
 
   implicit val executionContext = actorRefFactory.dispatcher
@@ -145,15 +145,13 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
 
   def tmsGrid(layerId: LayerId, key: SpatialKey) = {
     complete {
-      val tile = tileReader(layerId).read(key)
-      tile.asciiDrawDouble()
+      tileReader(layerId).read(key).asciiDrawDouble()
     }
   }
 
   def tmsType(layerId: LayerId, key: SpatialKey) = {
     complete {
-      val tile = tileReader(layerId).read(key)
-      tile.getClass.getName
+      tileReader(layerId).read(key).getClass.getName
     }
   }
 
@@ -224,9 +222,9 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
                 /* Prepare to yield a coloured Tile */
                 val tile = tileReader(layerId).read(key)
                 val ramp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed)
-                val Color = """0x(\p{XDigit}{8})""".r
+                val color = """0x(\p{XDigit}{8})""".r
                 val colorOptions = nodataColor match {
-                  case Some(Color(c)) =>
+                  case Some(color(c)) =>
                     ColorMap.Options.DEFAULT
                       .copy(noDataColor = java.lang.Long.parseLong(c, 16).toInt)
                   case _ => ColorMap.Options.DEFAULT
