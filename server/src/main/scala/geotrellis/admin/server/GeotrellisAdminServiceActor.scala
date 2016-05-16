@@ -19,7 +19,7 @@ import spray.json._
 import spray.routing._
 
 class GeotrellisAdminServiceActor extends Actor with GeotrellisAdminService {
-  val conf = AvroRegistrator(
+  val conf: SparkConf = AvroRegistrator(
     new SparkConf()
       .setMaster(sys.env("SPARK_MASTER"))
       .setAppName("geotrellis-admin")
@@ -94,7 +94,7 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
   def bounds = pathPrefix(Segment / IntNumber) { (layerName, zoom) =>
     import EndpointProtocol._
     complete {
-      val data = reader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId(layerName, zoom))
+      val data: TileLayerRDD[SpatialKey] = reader.read(LayerId(layerName, zoom))
       data.metadata.gridBounds
     }
   }
@@ -104,7 +104,7 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
     complete {
       attributeStore.layerIds
         .groupBy(_.name)
-        .mapValues(_.map(_.zoom).sorted)
+        .map({ case (k, v) => (k, v.map(_.zoom).sorted) })
         .filter(l => !(l._2 contains 0))
         .map(l => LayerDescription(l._1, l._2))
     }
@@ -141,101 +141,118 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
       val key = SpatialKey(x, y)
       val layerId = LayerId(layer, zoom)
 
-      {
-        import DefaultJsonProtocol._
-        pathPrefix("grid") {
-          complete {
-            val tile = tileReader(layerId).read(key)
-            tile.asciiDrawDouble()
-          }
-        } ~
-          pathPrefix("type") {
-            complete {
-              val tile = tileReader(layerId).read(key)
-              tile.getClass.getName
-            }
-          } ~
-          pathPrefix("breaks") {
-            complete {
-              val tile = tileReader(layerId).read(key)
-              JsObject("classBreaks" -> tile.classBreaksDouble(100).toJson)
-            }
-          } ~
-          pathPrefix("histo") {
-            complete {
-              val tile = tileReader(layerId).read(key)
-              val histo = tile.histogram
-              val histoD = tile.histogramDouble
-              val formattedHisto = {
-                val buff = scala.collection.mutable.Buffer.empty[(Int, Long)]
-                histo.foreach((v, c) => buff += ((v, c)))
-                buff.to[Vector]
-              }
-              val formattedHistoD = {
-                val buff = scala.collection.mutable.Buffer.empty[(Double, Long)]
-                histoD.foreach((v, c) => buff += ((v, c)))
-                buff.to[Vector]
-              }
-              JsObject(
-                "histo" -> formattedHisto.toJson,
-                "histoDouble" -> formattedHistoD.toJson
-              )
-            }
-          } ~
-          pathPrefix("stats") {
-            complete {
-              val tile = tileReader(layerId).read(key)
-              JsObject(
-                "statistics" -> tile.statistics.toString.toJson,
-                "statisticsDouble" -> tile.statisticsDouble.toString.toJson
-              )
-            }
-          }
-      } ~
-        pathEnd {
-          parameters(
-            'breaks,
-            'opacity ? 100.0,
-            'nodataColor ?,
-            'colorRamp ? "blue-to-red"
-          ) { (breaksParam, opacityParam, nodataColor, colorRamp) =>
-              import geotrellis.raster._
-              respondWithMediaType(MediaTypes.`image/png`) {
-                complete {
-                  getMetadata(layerId).flatMap { md: TileLayerMetadata[SpatialKey] =>
-                    if (!md.bounds.includes(key)) {
-                      /* There is no tile data at this (x,y) location,
-                       * so don't bother calling the remote store (S3) for it.
-                       */
-                      Future.successful(ErrorTile.bytes)
-                    } else {
-                      /* Prepare to yield a coloured Tile */
-                      val tile = tileReader(layerId).read(key)
-                      val ramp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed)
-                      val Color = """0x(\p{XDigit}{8})""".r
-                      val colorOptions = nodataColor match {
-                        case Some(Color(c)) =>
-                          ColorMap.Options.DEFAULT
-                            .copy(noDataColor = java.lang.Long.parseLong(c, 16).toInt)
-                        case _ => ColorMap.Options.DEFAULT
-                      }
+      pathPrefix("grid")(tmsGrid(layerId, key)) ~
+      pathPrefix("type")(tmsType(layerId, key)) ~
+      pathPrefix("breaks")(tmsBreaks(layerId, key)) ~
+      pathPrefix("histo")(tmsHisto(layerId, key)) ~
+      pathPrefix("stats")(tmsStats(layerId, key)) ~
+      pathEnd(serveTile(layerId, key))
+    }
+  }
 
-                      breaksStore.get(breaksParam) match {
-                        case None => Future.successful(ErrorTile.bytes)
-                        case Some(fut) => {
-                          fut.map { b: Array[Double] =>
-                            val colorMap = ramp.setAlpha(opacityParam)
-                              .toColorMap(b, colorOptions)
-                            tile.renderPng(colorMap).bytes
-                          }
-                        }
-                      }
+  def tmsGrid(layerId: LayerId, key: SpatialKey) = {
+    complete {
+      val tile = tileReader(layerId).read(key)
+      tile.asciiDrawDouble()
+    }
+  }
+
+  def tmsType(layerId: LayerId, key: SpatialKey) = {
+    complete {
+      val tile = tileReader(layerId).read(key)
+      tile.getClass.getName
+    }
+  }
+
+  def tmsBreaks(layerId: LayerId, key: SpatialKey) = {
+    import DefaultJsonProtocol._
+
+    complete {
+      val tile = tileReader(layerId).read(key)
+      JsObject("classBreaks" -> tile.classBreaksDouble(100).toJson)
+    }
+  }
+
+  def tmsHisto(layerId: LayerId, key: SpatialKey) = {
+    import DefaultJsonProtocol._
+
+    complete {
+      val tile = tileReader(layerId).read(key)
+      val histo = tile.histogram
+      val histoD = tile.histogramDouble
+      val formattedHisto = {
+        val buff = scala.collection.mutable.Buffer.empty[(Int, Long)]
+        histo.foreach((v, c) => buff += ((v, c)))
+        buff.to[Vector]
+      }
+      val formattedHistoD = {
+        val buff = scala.collection.mutable.Buffer.empty[(Double, Long)]
+        histoD.foreach((v, c) => buff += ((v, c)))
+        buff.to[Vector]
+      }
+
+      JsObject(
+        "histo" -> formattedHisto.toJson,
+        "histoDouble" -> formattedHistoD.toJson
+      )
+    }
+  }
+
+  def tmsStats(layerId: LayerId, key: SpatialKey) = {
+    import DefaultJsonProtocol._
+
+    complete {
+      val tile = tileReader(layerId).read(key)
+      JsObject(
+        "statistics" -> tile.statistics.toString.toJson,
+        "statisticsDouble" -> tile.statisticsDouble.toString.toJson
+      )
+    }
+  }
+
+  def serveTile(layerId: LayerId, key: SpatialKey) = {
+    parameters(
+      'breaks,
+      'opacity ? 100.0,
+      'nodataColor ?,
+      'colorRamp ? "blue-to-red"
+    ) { (breaksParam, opacityParam, nodataColor, colorRamp) =>
+        import geotrellis.raster._
+
+        respondWithMediaType(MediaTypes.`image/png`) {
+          complete {
+            getMetadata(layerId).flatMap { md: TileLayerMetadata[SpatialKey] =>
+              if (!md.bounds.includes(key)) {
+                /* There is no tile data at this (x,y) location,
+               * so don't bother calling the remote store (S3) for it.
+               */
+                Future.successful(None)
+              } else {
+                /* Prepare to yield a coloured Tile */
+                val tile = tileReader(layerId).read(key)
+                val ramp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed)
+                val Color = """0x(\p{XDigit}{8})""".r
+                val colorOptions = nodataColor match {
+                  case Some(Color(c)) =>
+                    ColorMap.Options.DEFAULT
+                      .copy(noDataColor = java.lang.Long.parseLong(c, 16).toInt)
+                  case _ => ColorMap.Options.DEFAULT
+                }
+
+                breaksStore.get(breaksParam) match {
+                  case None => Future.successful(None)
+                  case Some(fut) => {
+                    fut.map { b: Array[Double] =>
+                      val colorMap = ramp.setAlpha(opacityParam)
+                        .toColorMap(b, colorOptions)
+                      Some(tile.renderPng(colorMap).bytes)
                     }
                   }
                 }
               }
             }
+          }
         }
-    }
+      }
   }
 }
