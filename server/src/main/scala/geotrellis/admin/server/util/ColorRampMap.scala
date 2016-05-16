@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package geotrellis.admin.server.services
+package geotrellis.admin.server.util
 
 import geotrellis.raster.render._
 
@@ -39,6 +39,7 @@ object ColorRampMap {
     )
 
   def get(s:String): Option[ColorRamp] = rampMap.get(s)
+
   def getOrElse(s:String, cr:ColorRamp): ColorRamp = rampMap.getOrElse(s,cr)
 
   def getJson = {

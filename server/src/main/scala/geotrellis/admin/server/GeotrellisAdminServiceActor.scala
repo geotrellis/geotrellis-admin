@@ -3,7 +3,6 @@ package geotrellis.admin.server
 import scala.concurrent.Future
 
 import akka.actor._
-import geotrellis.admin.server.services.ColorRampMap
 import geotrellis.admin.server.util._
 import geotrellis.raster._
 import geotrellis.raster.render._
@@ -69,12 +68,11 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
     cors {
       get {
         pathPrefix("gt") {
-          pathPrefix("errorTile")(errorTile) ~
-            pathPrefix("bounds")(bounds) ~
-            pathPrefix("metadata")(metadata) ~
-            pathPrefix("layers")(layers) ~
-            pathPrefix("tms")(tms) ~
-            pathPrefix("breaks")(breaks)
+          pathPrefix("bounds")(bounds) ~
+          pathPrefix("metadata")(metadata) ~
+          pathPrefix("layers")(layers) ~
+          pathPrefix("tms")(tms) ~
+          pathPrefix("breaks")(breaks)
         }
       }
     }
@@ -85,11 +83,6 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
     implicit val ldFormat = jsonFormat2(LayerDescription)
     implicit val gbFormat = jsonFormat4(GridBounds.apply)
   }
-
-  def errorTile =
-    respondWithMediaType(MediaTypes.`image/png`) {
-      complete(ErrorTile.bytes)
-    }
 
   def bounds = pathPrefix(Segment / IntNumber) { (layerName, zoom) =>
     import EndpointProtocol._
@@ -224,8 +217,8 @@ trait GeotrellisAdminService extends HttpService with CORSSupport {
             getMetadata(layerId).flatMap { md: TileLayerMetadata[SpatialKey] =>
               if (!md.bounds.includes(key)) {
                 /* There is no tile data at this (x,y) location,
-               * so don't bother calling the remote store (S3) for it.
-               */
+                 * so don't bother calling the remote store (S3) for it.
+                 */
                 Future.successful(None)
               } else {
                 /* Prepare to yield a coloured Tile */
