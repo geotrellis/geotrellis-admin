@@ -1,9 +1,7 @@
 package geotrellis.admin.client
 
-import io.circe._
-import io.circe.generic.semiauto._
-
 import geotrellis.admin.shared._
+import io.circe._
 
 package object circuit {
 

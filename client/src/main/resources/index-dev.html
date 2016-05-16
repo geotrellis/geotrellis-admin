@@ -31,15 +31,15 @@
 
   <section class="app"></section>
 
-  <script type="text/javascript" src="../client-jsdeps.js"></script>
-  <script type="text/javascript" src="index-bundle.js"></script>
+  <!-- An extra dependency -->
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/placeholders/4.0.1/placeholders.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.10.0/js/bootstrap-select.min.js"></script>
-  <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
-  <script type="text/javascript" src="../geotrellis-admin-client-fastopt.js"></script>
-  <script type="text/javascript" src="/workbench.js"></script>
-  <script>
-    geotrellis.admin.client.Main().main();
-  </script>
+
+  <!-- Include Scala.js compiled code -->
+  <script type="text/javascript" src="../../../target/scala-2.11/geotrellis-admin-client-fastopt.js"></script>
+  <script type="text/javascript" src="../../../target/scala-2.11/geotrellis-admin-client-jsdeps.js"></script>
+
+  <!-- Run the App -->
+  <script type="text/javascript" src="../../../target/scala-2.11/geotrellis-admin-client-launcher.js"></script>
+
 </body>
 </html>
