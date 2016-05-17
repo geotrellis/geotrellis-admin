@@ -93,12 +93,11 @@ trait AdminRoutes extends HttpService with CORSSupport {
   }
 
   /** Get the grid bounds for a Layer at a given zoom level */
-  // TODO Why fetch the tile? Isn't getting the cached metadata faster?
   def bounds = pathPrefix(Segment / IntNumber) { (layerName, zoom) =>
     import EndpointProtocol._
+
     complete {
-      val data: TileLayerRDD[SpatialKey] = reader.read(LayerId(layerName, zoom))
-      data.metadata.gridBounds
+      getMetadata(LayerId(layerName, zoom)).map(_.gridBounds)
     }
   }
 
@@ -134,11 +133,13 @@ trait AdminRoutes extends HttpService with CORSSupport {
   /** Get a Layer's metadata for some zoom level */
   def metadata = pathPrefix(Segment / IntNumber) { (layerName, zoom) =>
     complete {
-      val layer = LayerId(layerName, zoom)
-      getMetadata(layer)
+      getMetadata(LayerId(layerName, zoom))
     }
   }
 
+  /** Calculate and store class breaks for a tile, and yield a UUID that
+    * references the saved breaks. Necessary for a `/tms/...` call.
+    */
   def breaks = pathPrefix(Segment / IntNumber) { (layer, numBreaks) =>
     import DefaultJsonProtocol._
     complete {
