@@ -1,5 +1,8 @@
 package geotrellis.admin.client.circuit
 
+import io.circe.Json
+import scala.scalajs.js
+
 import diode.data._
 import geotrellis.admin.client._
 import geotrellis.admin.client.facades._
@@ -45,8 +48,12 @@ case class DisplayModel(
   opacity: Option[Int] = None,
   breaksCount: Option[Int] = None,
   metadata: Pot[Metadata] = Empty,
+  attributes: Pot[ExtraAttrs] = Empty,
   leafletM: LeafletModel = LeafletModel()
 )
+
+// TODO Move this to where it should be.
+case class ExtraAttrs(attrs: Map[String, Json])
 
 /* Diode Actions */
 case class SelectLayer(layer: Option[LayerDescription])
@@ -61,8 +68,15 @@ case class SelectBreaksCount(breaks: Option[Int])
 case class UpdateBreaks(breaks: Pot[String] = Empty)
 case object RefreshBreaks
 
+/* Metadata */
 case class UpdateMetadata(md: Pot[Metadata] = Empty)
 case object CollectMetadata
+
+/* Extra Attributes */
+case class UpdateAttributes(attrs: Pot[ExtraAttrs] = Empty)
+case object CollectAttributes
+
+/* Display Actions */
 case object UpdateDisplay
 case object UpdateDisplayBreaksCount
 case object UpdateDisplayLayer

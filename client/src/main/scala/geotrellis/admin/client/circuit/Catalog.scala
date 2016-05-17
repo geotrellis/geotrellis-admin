@@ -3,7 +3,9 @@ package geotrellis.admin.client.circuit
 import diode._
 import diode.data._
 import geotrellis.admin.client._
+import org.scalajs.dom.XMLHttpRequest
 import org.scalajs.dom.ext.Ajax
+import scala.concurrent.Future
 
 object Catalog {
   // TODO Check how these `Option` values are used, and see if `zoomMap` is better
@@ -14,8 +16,21 @@ object Catalog {
   val currentOpacity: ModelR[RootModel, Option[Int]] = ClientCircuit.zoom(_.displayM.opacity)
   val currentZoomLevel: ModelR[RootModel, Option[Int]] = ClientCircuit.zoom(_.displayM.leafletM.zoom)
 
-  def list = Ajax.get(SiteConfig.adminHostUrl("/gt/layers"))
-  def metadata(name: String, zoom: Int) = Ajax.get(SiteConfig.adminHostUrl(s"/gt/metadata/${name}/${zoom}"))
-  def bounds(name: String, zoom: Int) = Ajax.get(SiteConfig.adminHostUrl(s"/gt/bounds/${name}/${zoom}"))
-  def breaks(name: String, breaks: Int) = Ajax.get(SiteConfig.adminHostUrl(s"/gt/breaks/${name}/${breaks}"))
+  def list: Future[XMLHttpRequest] =
+    Ajax.get(SiteConfig.adminHostUrl("/gt/layers"))
+
+  def metadata(name: String, zoom: Int): Future[XMLHttpRequest] =
+    Ajax.get(SiteConfig.adminHostUrl(s"/gt/metadata/${name}/${zoom}"))
+
+  def attributes(name: String, zoom: Int): Future[XMLHttpRequest] = {
+    println("Calling gt/attributes...")
+
+    Ajax.get(SiteConfig.adminHostUrl(s"/gt/attributes/${name}/${zoom}"))
+  }
+
+  def bounds(name: String, zoom: Int): Future[XMLHttpRequest] =
+    Ajax.get(SiteConfig.adminHostUrl(s"/gt/bounds/${name}/${zoom}"))
+
+  def breaks(name: String, breaks: Int): Future[XMLHttpRequest] =
+    Ajax.get(SiteConfig.adminHostUrl(s"/gt/breaks/${name}/${breaks}"))
 }

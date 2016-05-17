@@ -1,10 +1,12 @@
 package geotrellis.admin.client.components.sidebar
 
+import diode.data.{ Empty, Failed, Ready }
 import diode.react._
 import diode.react.ReactPot._
 import geotrellis.admin.client.circuit._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
+import org.scalajs.dom.raw.HTMLParagraphElement
 import scalacss.Defaults._
 
 object InfoPanel {
@@ -55,6 +57,10 @@ object InfoPanel {
               )
             )
           )
+        }),
+        proxy().attributes.render(attrs => {
+          <.h3("Extra Attributes")
+          attrs.attrs.map({ case (k,v) => <.p(s"${k}") })
         })
       )
     }

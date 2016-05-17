@@ -2,6 +2,7 @@ package geotrellis.admin.client.circuit
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.scalajs.js.JSON
+import scala.scalajs.js
 
 import Catalog._
 import cats.data.Xor
@@ -23,7 +24,7 @@ class DisplayHandler[M](modelRW: ModelRW[M, DisplayModel]) extends ActionHandler
       effectOnly(
         Effect.action(UpdateDisplayLayer) + Effect.action(UpdateDisplayBreaksCount) +  Effect.action(UpdateDisplayRamp) + Effect.action(UpdateDisplayOpacity) >>
         Effect.action(RefreshBreaks) >>
-        Effect.action(UpdateTileLayer) + Effect.action(CollectMetadata)
+        Effect.action(UpdateTileLayer) + Effect.action(CollectMetadata) + Effect.action(CollectAttributes)
       )
     case UpdateDisplayLayer => {
       val ld = ClientCircuit.zoom(_.layerM.selection).value
@@ -39,15 +40,30 @@ class DisplayHandler[M](modelRW: ModelRW[M, DisplayModel]) extends ActionHandler
       updated(value.copy(breaksCount = ClientCircuit.zoom(_.breaksM.breaksCount).value))
     case CollectMetadata => {
       effectOnly(Effect(Catalog.metadata(currentLayerName.value.get, currentZoomLevel.value.get).map { res =>
-        val parsed = JSON.parse(res.responseText)
-        val md = decodeJs[Metadata](parsed)
-        md match {
-          case Xor.Right(md) => UpdateMetadata(Ready(md))
+        val parsed: js.Any = JSON.parse(res.responseText)
+
+        decodeJs[Metadata](parsed) match {
+          case Xor.Right(m) => UpdateMetadata(Ready(m))
           case Xor.Left(e) => UpdateMetadata(Failed(e))
         }
       }))
     }
+    case CollectAttributes => {
+      effectOnly(Effect(Catalog.attributes(currentLayerName.value.get, currentZoomLevel.value.get).map { res =>
+        println("Server call for attributes succeeded.")
+
+        val parsed: js.Any = JSON.parse(res.responseText)
+
+        println("Parsing succeeded.")
+
+        decodeJs[Map[String, Json]](parsed) match {
+          case Xor.Right(a) => UpdateAttributes(Ready(ExtraAttrs(a)))
+          case Xor.Left(e) => UpdateAttributes(Failed(e))
+        }
+      }))
+    }
     case UpdateMetadata(md) => updated(value.copy(metadata = md))
+    case UpdateAttributes(attrs) => updated(value.copy(attributes = attrs))
   }
 }
 
@@ -80,7 +96,7 @@ class LeafletHandler[M](modelRW: ModelRW[M, LeafletModel]) extends ActionHandler
       updated(value.copy(gtLayer = gtLayer), Effect.action(UpdateZoomLevel(value.zoom)))
     }
     case UpdateZoomLevel(zl) =>
-      updated(value.copy(zoom = zl), Effect.action(CollectMetadata))
+      updated(value.copy(zoom = zl), Effect.action(CollectMetadata) + Effect.action(CollectAttributes))
   }
 }
 
