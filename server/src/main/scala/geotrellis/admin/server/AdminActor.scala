@@ -75,6 +75,7 @@ trait AdminRoutes extends HttpService with CORSSupport {
     cors {
       get {
         pathPrefix("gt") {
+          pathPrefix("errorTile")(errorTile) ~
           pathPrefix("bounds")(bounds) ~
           pathPrefix("metadata")(metadata) ~
           pathPrefix("layers")(layers) ~
@@ -90,6 +91,10 @@ trait AdminRoutes extends HttpService with CORSSupport {
   object EndpointProtocol extends DefaultJsonProtocol {
     implicit val ldFormat = jsonFormat2(LayerDescription)
     implicit val gbFormat = jsonFormat4(GridBounds.apply)
+  }
+
+  def errorTile = respondWithMediaType(MediaTypes.`image/png`) {
+    complete(ErrorTile.bytes)
   }
 
   /** Get the grid bounds for a Layer at a given zoom level */
