@@ -9,7 +9,7 @@ object Main {
     implicit val system = ActorSystem("geotrellis-admin-server")
     val host = sys.env("GT_HOSTNAME")
     val port = sys.env("GT_PORT").toInt
-    val service = system.actorOf(Props[GeotrellisAdminServiceActor], "geotrellis-admin-service")
+    val service = system.actorOf(Props[AdminActor], "geotrellis-admin-service")
 
     IO(Http) ! Http.Bind(service, host, port)
   }

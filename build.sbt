@@ -52,6 +52,11 @@ lazy val clientSettings = Seq(
   mainClass in (Compile, run) := Some("geotrellis.admin.client.Main"),
   refreshBrowsers <<= refreshBrowsers.triggeredBy(fastOptJS in Compile),
   bootSnippet := "geotrellis.admin.client.Main().main();",
+
+  // To avoid manually launching the app in HTML
+  persistLauncher in Compile := true,
+  persistLauncher in Test := false,
+
   testFrameworks += new TestFramework("utest.runner.Framework"),
   libraryDependencies ++= Seq(
     "com.lihaoyi" %%% "utest" % "0.4.3" % "test",
@@ -144,4 +149,3 @@ lazy val shared = (crossProject.crossType(CrossType.Pure) in file("shared")).
 lazy val sharedJVM = shared.jvm
 
 lazy val sharedJS = shared.js
-

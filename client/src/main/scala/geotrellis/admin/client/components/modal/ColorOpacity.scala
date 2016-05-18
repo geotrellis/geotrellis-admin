@@ -1,29 +1,15 @@
 package geotrellis.admin.client.components.modal
 
-import diode._
+import scala.scalajs.js
+
 import diode.react._
-import diode.data.Pot
-import diode.react.ReactPot._
+import geotrellis.admin.client.circuit._
+import geotrellis.admin.client.components._
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.extra.router._
 import japgolly.scalajs.react.vdom.prefix_<^._
-import org.scalajs.dom
-import scalacss.Defaults._
 import scalacss.ScalaCssReact._
 
-import scala.scalajs.js
-import scala.scalajs.js.Dynamic.{literal => json}
-import scala.scalajs.js.annotation._
-import scala.scalajs.js.{UndefOr, undefined}
-import scala.scalajs.js.JSConverters._
-import scala.util.Try
-
-import geotrellis.admin.client.facades._
-import geotrellis.admin.client.components._
-import geotrellis.admin.client.circuit._
-
 object ColorOpacity {
-
 
   class Backend($: BackendScope[ModelProxy[ColorModel], Unit]) {
 

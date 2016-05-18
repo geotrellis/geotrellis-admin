@@ -2,6 +2,7 @@ package geotrellis.admin
 
 
 package object shared {
+
   case class ClassBreaks(classBreaks: String = "")
   case class LayerDescription(name: String = "", availableZooms: Seq[Int] = Seq())
   case class Metadata(extent: Extent, layoutDefinition: LayoutDefinition, bounds: Bounds, cellType: String, crs: String)
@@ -10,4 +11,5 @@ package object shared {
   case class Bounds(minKey: Key, maxKey: Key)
   case class TileLayout(layoutCols: Int, layoutRows: Int, tileCols: Int, tileRows: Int)
   case class Key(col: Int, row: Int)
+
 }

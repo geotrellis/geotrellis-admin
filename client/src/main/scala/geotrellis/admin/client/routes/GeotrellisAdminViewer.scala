@@ -1,27 +1,14 @@
 package geotrellis.admin.client.routes
 
-import japgolly.scalajs.react._
-import japgolly.scalajs.react.extra.router._
-import japgolly.scalajs.react.vdom.prefix_<^._
-import org.scalajs.dom
-import scalacss.Defaults._
-import scalacss.ScalaCssReact._
-import diode.react.ReactPot._
-import diode._
 import diode.react._
-import diode.data.Pot
-
-import scala.scalajs.js
-import scala.scalajs.js.Dynamic.{literal => json}
-import scala.scalajs.js.annotation.JSName
-import scala.scalajs.js.{UndefOr, undefined}
-import scala.scalajs.js.annotation.JSExport
-
-import geotrellis.admin.client.components.sidebar._
-import geotrellis.admin.client.components.modal._
-import geotrellis.admin.client.components.map._
-import geotrellis.admin.client.components._
 import geotrellis.admin.client.circuit._
+import geotrellis.admin.client.components._
+import geotrellis.admin.client.components.map._
+import geotrellis.admin.client.components.modal._
+import geotrellis.admin.client.components.sidebar._
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.vdom.prefix_<^._
+import scalacss.ScalaCssReact._
 
 
 object GeotrellisAdminViewer {
@@ -38,13 +25,13 @@ object GeotrellisAdminViewer {
 
     def render(props: ModelProxy[RootModel], state: State) = {
       <.div(
-        AppCircuit.wrap(_.displayM.leafletM)(LeafletMap(_)),
+        ClientCircuit.wrap(_.displayM.leafletM)(LeafletMap(_)),
         <.div(
           ^.className := "sidebar",
           <.button(
             BootstrapStyles.buttonDefaultBlock,
             ^.onClick --> $.modState(_.copy(showModal = true)),
-            "Layer Settings"
+            "Map Settings"
           ),
           <.div(
             props.connect(_.displayM)(InfoPanel(_))
@@ -64,4 +51,3 @@ object GeotrellisAdminViewer {
   def apply(props: ModelProxy[RootModel]) = component(props)
 
 }
-

@@ -1,36 +1,21 @@
 package geotrellis.admin.client.components.sidebar
 
-import diode._
 import diode.react._
-import diode.data.Pot
 import diode.react.ReactPot._
-import japgolly.scalajs.react._
-import japgolly.scalajs.react.extra.router._
-import japgolly.scalajs.react.vdom.prefix_<^._
-import japgolly.scalajs.react.vdom.Extra
-import org.scalajs.dom
-import scalacss.Defaults._
-import scalacss.ScalaCssReact._
-
-import scala.scalajs.js
-import scala.scalajs.js.Dynamic.{literal => json}
-import scala.scalajs.js.annotation._
-import scala.scalajs.js.{UndefOr, undefined}
-import scala.scalajs.js.JSConverters._
-
-import geotrellis.admin.client.facades._
 import geotrellis.admin.client.circuit._
-
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.vdom.prefix_<^._
+import org.scalajs.dom.raw.HTMLDivElement
+import scalacss.Defaults._
 
 object InfoPanel {
 
   object Style extends StyleSheet.Inline {
-    import dsl._
 
   }
 
   class Backend($: BackendScope[ModelProxy[DisplayModel], Unit]) {
-    def render(proxy: ModelProxy[DisplayModel]) = {
+    def render(proxy: ModelProxy[DisplayModel]): ReactTagOf[HTMLDivElement] = {
       <.div(
         proxy().metadata.render(md => {
           <.div(
@@ -70,6 +55,17 @@ object InfoPanel {
                 )
               )
             )
+          )
+        }),
+        proxy().attributes.render(attrs => {
+          <.div(
+            <.h3("Extra Attributes"),
+            attrs.attrs.map({ case (k,v) =>
+              <.div(
+                <.h4(s"${k}"),
+                <.p(s"${v}")
+              )
+            })
           )
         })
       )

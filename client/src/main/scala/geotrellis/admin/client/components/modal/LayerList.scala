@@ -1,29 +1,17 @@
 package geotrellis.admin.client.components.modal
 
-import diode._
-import diode.react._
-import diode.data.Pot
-import diode.react.ReactPot._
-import japgolly.scalajs.react._
-import japgolly.scalajs.react.extra._
-import japgolly.scalajs.react.vdom.prefix_<^._
-import chandu0101.scalajs.react.components.reactselect._
-import chandu0101.scalajs.react.components._
-
-import scala.scalajs.js.JSON
 import scala.scalajs.js
-import scala.scalajs.js.Dynamic.{literal => json}
-import scala.scalajs.js.annotation._
-import scala.scalajs.js.{UndefOr, undefined}
 import scala.scalajs.js.JSConverters._
-import org.scalajs.dom
-
-import scala.collection.mutable
+import scala.scalajs.js.JSON
 import scala.util.Try
 
-import geotrellis.admin.client.facades._
+import chandu0101.scalajs.react.components.reactselect._
+import diode.react._
+import diode.react.ReactPot._
 import geotrellis.admin.client.circuit._
 import geotrellis.admin.shared._
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.vdom.prefix_<^._
 
 
 object LayerList {
