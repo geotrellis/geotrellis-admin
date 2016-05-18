@@ -50,11 +50,7 @@ class DisplayHandler[M](modelRW: ModelRW[M, DisplayModel]) extends ActionHandler
     }
     case CollectAttributes => {
       effectOnly(Effect(Catalog.attributes(currentLayerName.value.get, currentZoomLevel.value.get).map { res =>
-        println("Server call for attributes succeeded.")
-
         val parsed: js.Any = JSON.parse(res.responseText)
-
-        println("Parsing succeeded.")
 
         decodeJs[Map[String, Json]](parsed) match {
           case Xor.Right(a) => UpdateAttributes(Ready(ExtraAttrs(a)))

@@ -23,8 +23,6 @@ object Catalog {
     Ajax.get(SiteConfig.adminHostUrl(s"/gt/metadata/${name}/${zoom}"))
 
   def attributes(name: String, zoom: Int): Future[XMLHttpRequest] = {
-    println("Calling gt/attributes...")
-
     Ajax.get(SiteConfig.adminHostUrl(s"/gt/attributes/${name}/${zoom}"))
   }
 
