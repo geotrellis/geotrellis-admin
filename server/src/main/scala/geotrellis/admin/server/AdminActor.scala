@@ -56,6 +56,9 @@ trait AdminRoutes extends HttpService with CORSSupport {
   val breaksStore: Cache[Array[Double]] = LruCache()
   val metadataStore: Cache[TileLayerMetadata[SpatialKey]] = LruCache()
 
+  /* Extra attributes besides metadata */
+  val extraAttrStore: Cache[Map[String,JsValue]] = LruCache()
+
   def layerId(layer: String): LayerId =
     LayerId(layer, baseZoomLevel)
 
@@ -64,13 +67,19 @@ trait AdminRoutes extends HttpService with CORSSupport {
     attributeStore.readMetadata[TileLayerMetadata[SpatialKey]](id)
   }
 
+  /* Find extra attributes written alongside normal metadata */
+  def extraAttributes(id: LayerId): Seq[String] =
+    attributeStore.availableAttributes(id)
+
   def serviceRoute =
     cors {
       get {
         pathPrefix("gt") {
+          pathPrefix("errorTile")(errorTile) ~
           pathPrefix("bounds")(bounds) ~
           pathPrefix("metadata")(metadata) ~
           pathPrefix("layers")(layers) ~
+          pathPrefix("attributes")(attributes) ~
           pathPrefix("tms")(tms) ~
           pathPrefix("breaks")(breaks)
         }
@@ -84,14 +93,20 @@ trait AdminRoutes extends HttpService with CORSSupport {
     implicit val gbFormat = jsonFormat4(GridBounds.apply)
   }
 
+  def errorTile = respondWithMediaType(MediaTypes.`image/png`) {
+    complete(ErrorTile.bytes)
+  }
+
+  /** Get the grid bounds for a Layer at a given zoom level */
   def bounds = pathPrefix(Segment / IntNumber) { (layerName, zoom) =>
     import EndpointProtocol._
+
     complete {
-      val data: TileLayerRDD[SpatialKey] = reader.read(LayerId(layerName, zoom))
-      data.metadata.gridBounds
+      getMetadata(LayerId(layerName, zoom)).map(_.gridBounds)
     }
   }
 
+  /** Fetch all Layer names and their available zoom levels */
   def layers = {
     import EndpointProtocol._
     complete {
@@ -103,13 +118,33 @@ trait AdminRoutes extends HttpService with CORSSupport {
     }
   }
 
-  def metadata = pathPrefix(Segment / IntNumber) { (layerName, zoom) =>
+  /** Get extra non-meta attributes from a Layer */
+  def attributes = pathPrefix(Segment / IntNumber) { (layerName, zoom) =>
+    import DefaultJsonProtocol._
+
     complete {
-      val layer = LayerId(layerName, zoom)
-      getMetadata(layer)
+      val id = LayerId(layerName, zoom)
+
+      /* Cache the results of attribute calls */
+      extraAttrStore(s"${id.name}/${id.zoom}") {
+        extraAttributes(id).foldRight(Map.empty[String,JsValue]) {
+          case ("metadata", acc) => acc
+          case (att, acc) => acc + (att -> attributeStore.read[JsValue](id, att))
+        }
+      }
     }
   }
 
+  /** Get a Layer's metadata for some zoom level */
+  def metadata = pathPrefix(Segment / IntNumber) { (layerName, zoom) =>
+    complete {
+      getMetadata(LayerId(layerName, zoom))
+    }
+  }
+
+  /** Calculate and store class breaks for a tile, and yield a UUID that
+    * references the saved breaks. Necessary for a `/tms/...` call.
+    */
   def breaks = pathPrefix(Segment / IntNumber) { (layer, numBreaks) =>
     import DefaultJsonProtocol._
     complete {
@@ -129,6 +164,7 @@ trait AdminRoutes extends HttpService with CORSSupport {
     }
   }
 
+  /** Fetch information about a Tile, or the Tile itself as a PNG */
   def tms = handleExceptions(missingTileHandler) {
     pathPrefix(Segment / IntNumber / IntNumber / IntNumber) { (layer, zoom, x, y) =>
       val key = SpatialKey(x, y)

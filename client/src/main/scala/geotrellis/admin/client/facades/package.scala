@@ -1,6 +1,4 @@
 package geotrellis.admin.client
-//package chandu0101.scalajs
-
 
 package object facades {
   /**

@@ -49,8 +49,8 @@ object Bootstrap {
     val component = ReactComponentB[Props]("Panel")
       .renderPC((_, p, c) =>
       <.div(
-      <.div(p.heading),
-      <.div(c)
+        <.div(p.heading),
+        <.div(c)
       )
       ).build
 
@@ -109,5 +109,4 @@ object Bootstrap {
     def apply(props: Props, children: ReactElement*) = component(props, children: _*)
     def apply() = component
   }
-
 }

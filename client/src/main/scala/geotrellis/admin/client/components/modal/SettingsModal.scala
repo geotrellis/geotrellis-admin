@@ -1,27 +1,12 @@
 package geotrellis.admin.client.components.modal
 
-import japgolly.scalajs.react._
-import japgolly.scalajs.react.extra.router._
-import japgolly.scalajs.react.vdom.prefix_<^._
-import org.scalajs.dom
-import diode._
-import diode.react._
-import diode.data.Pot
-import diode.react.ReactPot._
-import scala.scalajs.js.JSApp
-import scala.scalajs.js.annotation.JSExport
-import scalacss.ScalaCssReact._
-
-import scala.scalajs.js
-import scala.scalajs.js.Dynamic.{literal => json}
-import scala.scalajs.js.annotation.JSName
-import scala.scalajs.js.{UndefOr, undefined}
-import scalacss.ScalaCssReact._
-
+import geotrellis.admin.client.circuit._
 import geotrellis.admin.client.components._
 import geotrellis.admin.client.components.Bootstrap._
-import geotrellis.admin.client.circuit._
 import geotrellis.admin.shared._
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.vdom.prefix_<^._
+import scalacss.ScalaCssReact._
 
 object SettingsModal {
   @inline private def bss = BootstrapStyles
@@ -43,10 +28,10 @@ object SettingsModal {
             footer = hide => <.span(Button(Button.Props(props.onAccept >> hide), "OK")),
             closed = props.onClose
           ),
-          AppCircuit.connect(_.layerM)(LayerList(_)),
-          AppCircuit.connect(_.colorM)(ColorRampList(_)),
-          AppCircuit.connect(_.colorM)(ColorOpacity(_)),
-          AppCircuit.connect(_.breaksM)(BreaksCount(_))
+          ClientCircuit.connect(_.layerM)(LayerList(_)),
+          ClientCircuit.connect(_.colorM)(ColorRampList(_)),
+          ClientCircuit.connect(_.colorM)(ColorOpacity(_)),
+          ClientCircuit.connect(_.breaksM)(BreaksCount(_))
         )
       )
     }

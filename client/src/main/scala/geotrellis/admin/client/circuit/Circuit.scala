@@ -1,68 +1,79 @@
 package geotrellis.admin.client.circuit
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.scalajs.js.JSON
+import scala.scalajs.js
+
+import Catalog._
+import cats.data.Xor
 import diode._
 import diode.data._
-import diode.util._
 import diode.react.ReactConnector
-import io.circe._
-import io.circe.scalajs._
-import io.circe.generic.semiauto._
-import org.scalajs.dom.ext.Ajax
-import cats.data.Xor
-
-import scala.scalajs.js.JSON
-import scala.concurrent.ExecutionContext.Implicits.global
-
-import geotrellis.admin.shared._
 import geotrellis.admin.client._
 import geotrellis.admin.client.facades._
-import Catalog._
+import geotrellis.admin.shared._
+import io.circe._
+import io.circe.generic.semiauto._
+import io.circe.scalajs._
+import scala.util.Try
 
 /** Display actions */
 class DisplayHandler[M](modelRW: ModelRW[M, DisplayModel]) extends ActionHandler(modelRW) {
   override def handle = {
     case UpdateDisplay =>
       effectOnly(
-        Effect.action(UpdateDisplayLayer) + Effect.action(UpdateDisplayBreaksCount) + Effect.action(UpdateDisplayRamp) +
-        Effect.action(UpdateDisplayOpacity) >>
+        Effect.action(UpdateDisplayLayer) + Effect.action(UpdateDisplayBreaksCount) +  Effect.action(UpdateDisplayRamp) + Effect.action(UpdateDisplayOpacity) >>
         Effect.action(RefreshBreaks) >>
-        Effect.action(UpdateTileLayer) + Effect.action(CollectMetadata)
+        Effect.action(UpdateTileLayer) + Effect.action(CollectMetadata) + Effect.action(CollectAttributes)
       )
     case UpdateDisplayLayer => {
-      val ld = AppCircuit.zoom(_.layerM.selection).value
+      val ld = ClientCircuit.zoom(_.layerM.selection).value
       updated(
         value.copy(layer = ld)
       )
     }
     case UpdateDisplayRamp =>
-      updated(value.copy(ramp = AppCircuit.zoom(_.colorM.ramp).value))
+      updated(value.copy(ramp = ClientCircuit.zoom(_.colorM.ramp).value))
     case UpdateDisplayOpacity =>
-      updated(value.copy(opacity = Some(AppCircuit.zoom(_.colorM.opacity).value)))
+      updated(value.copy(opacity = Some(ClientCircuit.zoom(_.colorM.opacity).value)))
     case UpdateDisplayBreaksCount =>
-      updated(value.copy(breaksCount = AppCircuit.zoom(_.breaksM.breaksCount).value))
+      updated(value.copy(breaksCount = ClientCircuit.zoom(_.breaksM.breaksCount).value))
     case CollectMetadata => {
       effectOnly(Effect(Catalog.metadata(currentLayerName.value.get, currentZoomLevel.value.get).map { res =>
-        val parsed = JSON.parse(res.responseText)
-        val md = decodeJs[Metadata](parsed)
-        md match {
-          case Xor.Right(md) => UpdateMetadata(Ready(md))
+        val parsed: js.Any = JSON.parse(res.responseText)
+
+        decodeJs[Metadata](parsed) match {
+          case Xor.Right(m) => UpdateMetadata(Ready(m))
           case Xor.Left(e) => UpdateMetadata(Failed(e))
         }
       }))
     }
-    case UpdateMetadata(md) =>
-      updated(value.copy(metadata = md))
+    case CollectAttributes => {
+      effectOnly(Effect(Catalog.attributes(currentLayerName.value.get, currentZoomLevel.value.get).map { res =>
+        println("Server call for attributes succeeded.")
+
+        val parsed: js.Any = JSON.parse(res.responseText)
+
+        println("Parsing succeeded.")
+
+        decodeJs[Map[String, Json]](parsed) match {
+          case Xor.Right(a) => UpdateAttributes(Ready(ExtraAttrs(a)))
+          case Xor.Left(e) => UpdateAttributes(Failed(e))
+        }
+      }))
+    }
+    case UpdateMetadata(md) => updated(value.copy(metadata = md))
+    case UpdateAttributes(attrs) => updated(value.copy(attributes = attrs))
   }
 }
 
 /** Leaflet handler */
 class LeafletHandler[M](modelRW: ModelRW[M, LeafletModel]) extends ActionHandler(modelRW) {
-  import scala.util.Try
   override def handle = {
     case InitLMap(elemID: String, mapOpts: LMapOptions) =>
       updated(value.copy(lmap = Try(Leaflet.map(elemID, mapOpts)).toOption))
     case UpdateTileLayer => {
-      val displayModel = AppCircuit.zoom(_.displayM).value
+      val displayModel = ClientCircuit.zoom(_.displayM).value
       val gtLayer = for {
         layer <- displayModel.layer
         colorRamp <- displayModel.ramp
@@ -85,7 +96,7 @@ class LeafletHandler[M](modelRW: ModelRW[M, LeafletModel]) extends ActionHandler
       updated(value.copy(gtLayer = gtLayer), Effect.action(UpdateZoomLevel(value.zoom)))
     }
     case UpdateZoomLevel(zl) =>
-      updated(value.copy(zoom = zl), Effect.action(CollectMetadata))
+      updated(value.copy(zoom = zl), Effect.action(CollectMetadata) + Effect.action(CollectAttributes))
   }
 }
 
@@ -143,7 +154,7 @@ class ColorHandler[M](modelRW: ModelRW[M, ColorModel]) extends ActionHandler(mod
   }
 }
 
-object AppCircuit extends Circuit[RootModel] with ReactConnector[RootModel] {
+object ClientCircuit extends Circuit[RootModel] with ReactConnector[RootModel] {
   // provides initial model to the Circuit
   override def initialModel = RootModel()
   // combine all handlers into one

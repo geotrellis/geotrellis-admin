@@ -1,28 +1,19 @@
 package geotrellis.admin.client.components.map
 
-import diode.react.ReactPot._
+import scala.scalajs.js
+import scala.scalajs.js._
+import scala.scalajs.js.JSConverters._
+import scala.scalajs.js.annotation.{JSName, JSExport}
+
 import diode._
 import diode.react._
-import diode.data.Pot
-import japgolly.scalajs.react._
-import japgolly.scalajs.react.extra._
-import japgolly.scalajs.react.vdom.prefix_<^._
-import org.scalajs.dom
-
-import io.circe._
-import io.circe.scalajs._
-
-import scala.scalajs.js.annotation.JSExport
-import scala.scalajs.js
-import scala.scalajs.js.Dynamic.{literal => json}
-import scala.scalajs.js.annotation.JSName
-import scala.scalajs.js._
-import org.scalajs.dom.Event
-import js.JSConverters._
-
-import geotrellis.admin.client.facades._
-import geotrellis.admin.client.circuit._
+import diode.react.ReactPot._
 import geotrellis.admin.client._
+import geotrellis.admin.client.circuit._
+import geotrellis.admin.client.facades._
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.vdom.prefix_<^._
+import org.scalajs.dom.Event
 
 object LeafletMap {
 
@@ -39,7 +30,7 @@ object LeafletMap {
   val defaultMapOptions =
     LMapOptions
       .center(LLatLng(41.850033, -87.6500523))
-      .zoom(AppCircuit.zoom(_.displayM.leafletM.zoom).value.getOrElse(2))
+      .zoom(ClientCircuit.zoom(_.displayM.leafletM.zoom).value.getOrElse(2))
       .layers(js.Array(baseLayers("toner_lite")))
       .result
 
@@ -80,4 +71,3 @@ object LeafletMap {
 
   def apply(props: ModelProxy[LeafletModel]) = leafletMap(props)
 }
-
