@@ -1,12 +1,11 @@
 package geotrellis.admin.client.components.sidebar
 
-import diode.data.{ Empty, Failed, Ready }
 import diode.react._
 import diode.react.ReactPot._
 import geotrellis.admin.client.circuit._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
-import org.scalajs.dom.raw.HTMLParagraphElement
+import org.scalajs.dom.raw.HTMLDivElement
 import scalacss.Defaults._
 
 object InfoPanel {
@@ -16,7 +15,7 @@ object InfoPanel {
   }
 
   class Backend($: BackendScope[ModelProxy[DisplayModel], Unit]) {
-    def render(proxy: ModelProxy[DisplayModel]) = {
+    def render(proxy: ModelProxy[DisplayModel]): ReactTagOf[HTMLDivElement] = {
       <.div(
         proxy().metadata.render(md => {
           <.div(
@@ -59,8 +58,15 @@ object InfoPanel {
           )
         }),
         proxy().attributes.render(attrs => {
-          <.h3("Extra Attributes")
-          attrs.attrs.map({ case (k,v) => <.p(s"${k}") })
+          <.div(
+            <.h3("Extra Attributes"),
+            attrs.attrs.map({ case (k,v) =>
+              <.div(
+                <.h4(s"${k}"),
+                <.p(s"${v}")
+              )
+            })
+          )
         })
       )
     }
