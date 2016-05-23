@@ -113,7 +113,6 @@ trait AdminRoutes extends HttpService with CORSSupport {
       attributeStore.layerIds
         .groupBy(_.name)
         .map({ case (k, v) => (k, v.map(_.zoom).sorted) })
-        .filter(l => !(l._2 contains 0))
         .map(l => LayerDescription(l._1, l._2))
     }
   }
@@ -142,7 +141,7 @@ trait AdminRoutes extends HttpService with CORSSupport {
     }
   }
 
-  /** Calculate and store class breaks for a tile, and yield a UUID that
+  /** Calculate and store class breaks for a layer, and yield a UUID that
     * references the saved breaks. Necessary for a `/tms/...` call.
     */
   def breaks = pathPrefix(Segment / IntNumber) { (layer, numBreaks) =>
@@ -150,8 +149,8 @@ trait AdminRoutes extends HttpService with CORSSupport {
     complete {
       val data = reader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](layerId(layer))
 
-      val breaks = data.classBreaksDouble(numBreaks)
-      val uuid = java.util.UUID.randomUUID.toString
+      val breaks: Array[Double] = data.classBreaksDouble(numBreaks)
+      val uuid: String = java.util.UUID.randomUUID.toString
       breaksStore(uuid)(breaks)
 
       JsObject("classBreaks" -> JsString(uuid))
@@ -179,19 +178,19 @@ trait AdminRoutes extends HttpService with CORSSupport {
     }
   }
 
-  def tmsGrid(layerId: LayerId, key: SpatialKey) = {
+  def tmsGrid(layerId: LayerId, key: SpatialKey): StandardRoute = {
     complete {
       tileReader(layerId).read(key).asciiDrawDouble()
     }
   }
 
-  def tmsType(layerId: LayerId, key: SpatialKey) = {
+  def tmsType(layerId: LayerId, key: SpatialKey): StandardRoute = {
     complete {
       tileReader(layerId).read(key).getClass.getName
     }
   }
 
-  def tmsBreaks(layerId: LayerId, key: SpatialKey) = {
+  def tmsBreaks(layerId: LayerId, key: SpatialKey): StandardRoute = {
     import DefaultJsonProtocol._
 
     complete {
@@ -200,7 +199,7 @@ trait AdminRoutes extends HttpService with CORSSupport {
     }
   }
 
-  def tmsHisto(layerId: LayerId, key: SpatialKey) = {
+  def tmsHisto(layerId: LayerId, key: SpatialKey): StandardRoute = {
     import DefaultJsonProtocol._
 
     complete {
@@ -225,7 +224,7 @@ trait AdminRoutes extends HttpService with CORSSupport {
     }
   }
 
-  def tmsStats(layerId: LayerId, key: SpatialKey) = {
+  def tmsStats(layerId: LayerId, key: SpatialKey): StandardRoute = {
     import DefaultJsonProtocol._
 
     complete {
@@ -257,9 +256,9 @@ trait AdminRoutes extends HttpService with CORSSupport {
               } else {
                 /* Prepare to yield a coloured Tile */
                 val tile = tileReader(layerId).read(key)
-                val ramp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed)
+                val ramp: ColorRamp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed)
                 val color = """0x(\p{XDigit}{8})""".r
-                val colorOptions = nodataColor match {
+                val colorOptions: ColorMap.Options = nodataColor match {
                   case Some(color(c)) =>
                     ColorMap.Options.DEFAULT
                       .copy(noDataColor = java.lang.Long.parseLong(c, 16).toInt)

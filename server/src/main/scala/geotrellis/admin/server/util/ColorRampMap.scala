@@ -18,9 +18,10 @@ package geotrellis.admin.server.util
 
 import geotrellis.raster.render._
 
-/** Provides a string keyed map to predefined color ramps
-  * to be used for coloring rendered rasters.
-  */
+/**
+ * Provides a string keyed map to predefined color ramps
+ * to be used for coloring rendered rasters.
+ */
 object ColorRampMap {
   val rampMap: Map[String, ColorRamp] =
     Map(
@@ -38,15 +39,16 @@ object ColorRampMap {
       "muted-terrain-qualitative" -> ColorRamps.ClassificationMutedTerrain
     )
 
-  def get(s:String): Option[ColorRamp] = rampMap.get(s)
+  def get(s: String): Option[ColorRamp] = rampMap.get(s)
 
-  def getOrElse(s:String, cr:ColorRamp): ColorRamp = rampMap.getOrElse(s,cr)
+  def getOrElse(s: String, cr: ColorRamp): ColorRamp = rampMap.getOrElse(s, cr)
 
-  def getJson = {
-    val c = for(key <- rampMap.keys) yield {
+  def getJson: String = {
+    val c = for (key <- rampMap.keys) yield {
       s"""{ "key": "$key", "image": "img/ramps/${key}.png" }"""
     }
     val arr = "[" + c.mkString(",") + "]"
+
     s"""{ "colors": $arr }"""
   }
 }
