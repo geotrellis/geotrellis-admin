@@ -1,6 +1,7 @@
 package geotrellis.admin.client.routes
 
 import diode.react._
+import diode.react.ReactPot._
 import geotrellis.admin.client.circuit._
 import geotrellis.admin.client.components._
 import geotrellis.admin.client.components.map._
@@ -39,7 +40,7 @@ object GeotrellisAdminViewer {
             "Metadata JSON"
           ),
           (if (state.showJSON) {
-            <.code("This is code")
+            props().displayM.rawMetadata.render(j => <.pre(j))
           } else ""),
           <.div(
             props.connect(_.displayM)(InfoPanel(_))

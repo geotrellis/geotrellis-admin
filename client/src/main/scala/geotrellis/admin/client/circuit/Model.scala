@@ -48,6 +48,7 @@ case class DisplayModel(
   opacity: Option[Int] = None,
   breaksCount: Option[Int] = None,
   metadata: Pot[Metadata] = Empty,
+  rawMetadata: Pot[String] = Empty,
   attributes: Pot[ExtraAttrs] = Empty,
   leafletM: LeafletModel = LeafletModel()
 )
@@ -69,7 +70,7 @@ case class UpdateBreaks(breaks: Pot[String] = Empty)
 case object RefreshBreaks
 
 /* Metadata */
-case class UpdateMetadata(md: Pot[Metadata] = Empty)
+case class UpdateMetadata(md: Pot[Metadata] = Empty, json: Pot[String] = Empty)
 case object CollectMetadata
 
 /* Extra Attributes */
