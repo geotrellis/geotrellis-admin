@@ -1,0 +1,18 @@
+version: '2'
+services:
+  adminclient:
+    image: moradology/geotrellis-admin-client:latest
+    ports:
+      - "8090:8090"
+    links:
+      - adminserver:geotrellis.admin.server
+  adminserver:
+    image: moradology/geotrellis-admin-server:latest
+    environment: # Set your S3 bucket and S3 key here
+      - S3_BUCKET=
+      - S3_KEY=
+    ports:
+      - "8080:8080"
+    volumes:
+      - ~/.aws:/root/.aws
+
