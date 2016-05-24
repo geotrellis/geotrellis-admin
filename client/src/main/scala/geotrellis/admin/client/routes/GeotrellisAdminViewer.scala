@@ -13,7 +13,7 @@ import scalacss.ScalaCssReact._
 
 object GeotrellisAdminViewer {
 
-  case class State(showModal: Boolean = true)
+  case class State(showModal: Boolean = true, showJSON: Boolean = false)
 
   class Backend($: BackendScope[ModelProxy[RootModel], State]) {
 
@@ -33,6 +33,14 @@ object GeotrellisAdminViewer {
             ^.onClick --> $.modState(_.copy(showModal = true)),
             "Map Settings"
           ),
+          <.button(
+            BootstrapStyles.buttonDefaultBlock,
+            ^.onClick --> $.modState(s => s.copy(showJSON = !s.showJSON)),
+            "Metadata JSON"
+          ),
+          (if (state.showJSON) {
+            <.code("This is code")
+          } else ""),
           <.div(
             props.connect(_.displayM)(InfoPanel(_))
           ),
