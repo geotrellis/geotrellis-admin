@@ -11,6 +11,7 @@ import geotrellis.spark.io._
 import geotrellis.spark.io.s3._
 import geotrellis.vector.io.json.Implicits._
 import org.apache.spark.{SparkConf, SparkContext}
+import scala.util.Try
 import spray.caching._
 import spray.http._
 import spray.httpx.SprayJsonSupport._
@@ -57,7 +58,7 @@ trait AdminRoutes extends HttpService with CORSSupport {
   val metadataStore: Cache[TileLayerMetadata[SpatialKey]] = LruCache()
 
   /* Extra attributes besides metadata */
-  val extraAttrStore: Cache[Map[String,JsValue]] = LruCache()
+  val extraAttrStore: Cache[Map[String, JsValue]] = LruCache()
 
   def layerId(layer: String): LayerId =
     LayerId(layer, baseZoomLevel)
@@ -76,12 +77,12 @@ trait AdminRoutes extends HttpService with CORSSupport {
       get {
         pathPrefix("gt") {
           pathPrefix("errorTile")(errorTile) ~
-          pathPrefix("bounds")(bounds) ~
-          pathPrefix("metadata")(metadata) ~
-          pathPrefix("layers")(layers) ~
-          pathPrefix("attributes")(attributes) ~
-          pathPrefix("tms")(tms) ~
-          pathPrefix("breaks")(breaks)
+            pathPrefix("bounds")(bounds) ~
+            pathPrefix("metadata")(metadata) ~
+            pathPrefix("layers")(layers) ~
+            pathPrefix("attributes")(attributes) ~
+            pathPrefix("tms")(tms) ~
+            pathPrefix("breaks")(breaks)
         }
       }
     }
@@ -126,7 +127,7 @@ trait AdminRoutes extends HttpService with CORSSupport {
 
       /* Cache the results of attribute calls */
       extraAttrStore(s"${id.name}/${id.zoom}") {
-        extraAttributes(id).foldRight(Map.empty[String,JsValue]) {
+        extraAttributes(id).foldRight(Map.empty[String, JsValue]) {
           case ("metadata", acc) => acc
           case (att, acc) => acc + (att -> attributeStore.read[JsValue](id, att))
         }
@@ -136,14 +137,33 @@ trait AdminRoutes extends HttpService with CORSSupport {
 
   /** Get a Layer's metadata for some zoom level */
   def metadata = pathPrefix(Segment / IntNumber) { (layerName, zoom) =>
+    import DefaultJsonProtocol._
+
     complete {
-      getMetadata(LayerId(layerName, zoom))
+      val id = LayerId(layerName, zoom)
+
+      /* Two things can go wrong here:
+       *   1. The metadata can be invalid, and fail to parse. In this case,
+       *      we try to serve the raw JSON of the metadata.
+       *   2. There is no metadata for this layer+zoom.
+       *
+       * Exceptions are thrown in either case, so we must guard.
+       */
+      getMetadata(id).map(_.toJson.asJsObject).recover({
+        case e: Throwable => {
+          val resp: JsValue = Try(attributeStore.read[JsValue](id, "metadata"))
+            .getOrElse(JsString("Error: No metadata for this layer/zoom."))
+
+          JsObject("metadata" -> resp)
+        }
+      })
     }
   }
 
-  /** Calculate and store class breaks for a layer, and yield a UUID that
-    * references the saved breaks. Necessary for a `/tms/...` call.
-    */
+  /**
+   * Calculate and store class breaks for a layer, and yield a UUID that
+   * references the saved breaks. Necessary for a `/tms/...` call.
+   */
   def breaks = pathPrefix(Segment / IntNumber) { (layer, numBreaks) =>
     import DefaultJsonProtocol._
     complete {
@@ -170,11 +190,11 @@ trait AdminRoutes extends HttpService with CORSSupport {
       val layerId = LayerId(layer, zoom)
 
       pathPrefix("grid")(tmsGrid(layerId, key)) ~
-      pathPrefix("type")(tmsType(layerId, key)) ~
-      pathPrefix("breaks")(tmsBreaks(layerId, key)) ~
-      pathPrefix("histo")(tmsHisto(layerId, key)) ~
-      pathPrefix("stats")(tmsStats(layerId, key)) ~
-      pathEnd(serveTile(layerId, key))
+        pathPrefix("type")(tmsType(layerId, key)) ~
+        pathPrefix("breaks")(tmsBreaks(layerId, key)) ~
+        pathPrefix("histo")(tmsHisto(layerId, key)) ~
+        pathPrefix("stats")(tmsStats(layerId, key)) ~
+        pathEnd(serveTile(layerId, key))
     }
   }
 
