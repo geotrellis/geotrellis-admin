@@ -151,10 +151,8 @@ trait AdminRoutes extends HttpService with CORSSupport {
        */
       getMetadata(id).map(_.toJson.asJsObject).recover({
         case e: Throwable => {
-          val resp: JsValue = Try(attributeStore.read[JsValue](id, "metadata"))
-            .getOrElse(JsString("Error: No metadata for this layer/zoom."))
-
-          JsObject("metadata" -> resp)
+          Try(attributeStore.read[JsObject](id, "metadata"))
+            .getOrElse(JsObject("error" -> JsString("No metadata for this layer/zoom.")))
         }
       })
     }
