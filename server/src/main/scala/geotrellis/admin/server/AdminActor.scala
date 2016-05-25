@@ -28,13 +28,13 @@ class AdminActor extends Actor with AdminRoutes {
       .setJars(SparkContext.jarOfObject(this).toList)
   )
 
-  implicit val sparkContext = new SparkContext(conf)
+  implicit val sparkContext: SparkContext = new SparkContext(conf)
 
-  override def actorRefFactory = context
+  override def actorRefFactory: ActorContext = context
   override def receive = runRoute(serviceRoute)
 
-  val s3Bucket = sys.env("S3_BUCKET")
-  val s3Key = sys.env("S3_KEY")
+  val s3Bucket: String = sys.env("S3_BUCKET")
+  val s3Key: String = sys.env("S3_KEY")
 
   override lazy val reader: LayerReader[LayerId] = S3LayerReader(s3Bucket, s3Key)
   override lazy val attributeStore: AttributeStore = S3AttributeStore(s3Bucket, s3Key)
@@ -52,13 +52,19 @@ trait AdminRoutes extends HttpService with CORSSupport {
   def attributeStore: AttributeStore
   def tileReader(id: LayerId): Reader[SpatialKey, Tile]
 
-  val baseZoomLevel = 4
+  val baseZoomLevel: Int = 4
 
   val breaksStore: Cache[Array[Double]] = LruCache()
   val metadataStore: Cache[TileLayerMetadata[SpatialKey]] = LruCache()
 
   /* Extra attributes besides metadata */
   val extraAttrStore: Cache[Map[String, JsValue]] = LruCache()
+
+  /* Uncoloured Tiles
+   * While Leaflet does cache coloured tiles to a degree,
+   * this cache is useful if the user changes colour ramps.
+   */
+  val tileStore: Cache[Tile] = LruCache(initialCapacity = 64)
 
   def layerId(layer: String): LayerId =
     LayerId(layer, baseZoomLevel)
@@ -71,6 +77,12 @@ trait AdminRoutes extends HttpService with CORSSupport {
   /* Find extra attributes written alongside normal metadata */
   def extraAttributes(id: LayerId): Seq[String] =
     attributeStore.availableAttributes(id)
+
+  /* Fetch a tile, either from the cache or S3 */
+  def getTile(id: LayerId, key: SpatialKey): Future[Tile] =
+    tileStore(s"${id.name}/${id.zoom}/${key.col}/${key.row}") {
+      tileReader(id).read(key)
+    }
 
   def serviceRoute =
     cors {
@@ -198,13 +210,13 @@ trait AdminRoutes extends HttpService with CORSSupport {
 
   def tmsGrid(layerId: LayerId, key: SpatialKey): StandardRoute = {
     complete {
-      tileReader(layerId).read(key).asciiDrawDouble()
+      getTile(layerId, key).map(_.asciiDrawDouble())
     }
   }
 
   def tmsType(layerId: LayerId, key: SpatialKey): StandardRoute = {
     complete {
-      tileReader(layerId).read(key).getClass.getName
+      getTile(layerId, key).map(_.getClass.getName)
     }
   }
 
@@ -212,8 +224,9 @@ trait AdminRoutes extends HttpService with CORSSupport {
     import DefaultJsonProtocol._
 
     complete {
-      val tile = tileReader(layerId).read(key)
-      JsObject("classBreaks" -> tile.classBreaksDouble(100).toJson)
+      getTile(layerId, key).map(t =>
+        JsObject("classBreaks" -> t.classBreaksDouble(100).toJson)
+      )
     }
   }
 
@@ -221,24 +234,25 @@ trait AdminRoutes extends HttpService with CORSSupport {
     import DefaultJsonProtocol._
 
     complete {
-      val tile = tileReader(layerId).read(key)
-      val histo = tile.histogram
-      val histoD = tile.histogramDouble
-      val formattedHisto = {
-        val buff = scala.collection.mutable.Buffer.empty[(Int, Long)]
-        histo.foreach((v, c) => buff += ((v, c)))
-        buff.to[Vector]
-      }
-      val formattedHistoD = {
-        val buff = scala.collection.mutable.Buffer.empty[(Double, Long)]
-        histoD.foreach((v, c) => buff += ((v, c)))
-        buff.to[Vector]
-      }
+      getTile(layerId, key).map({ tile =>
+        val histo = tile.histogram
+        val histoD = tile.histogramDouble
+        val formattedHisto = {
+          val buff = scala.collection.mutable.Buffer.empty[(Int, Long)]
+          histo.foreach((v, c) => buff += ((v, c)))
+          buff.to[Vector]
+        }
+        val formattedHistoD = {
+          val buff = scala.collection.mutable.Buffer.empty[(Double, Long)]
+          histoD.foreach((v, c) => buff += ((v, c)))
+          buff.to[Vector]
+        }
 
-      JsObject(
-        "histo" -> formattedHisto.toJson,
-        "histoDouble" -> formattedHistoD.toJson
-      )
+        JsObject(
+          "histo" -> formattedHisto.toJson,
+          "histoDouble" -> formattedHistoD.toJson
+        )
+      })
     }
   }
 
@@ -246,11 +260,12 @@ trait AdminRoutes extends HttpService with CORSSupport {
     import DefaultJsonProtocol._
 
     complete {
-      val tile = tileReader(layerId).read(key)
-      JsObject(
-        "statistics" -> tile.statistics.toString.toJson,
-        "statisticsDouble" -> tile.statisticsDouble.toString.toJson
-      )
+      getTile(layerId, key).map({ tile =>
+        JsObject(
+          "statistics" -> tile.statistics.toString.toJson,
+          "statisticsDouble" -> tile.statisticsDouble.toString.toJson
+        )
+      })
     }
   }
 
@@ -273,26 +288,27 @@ trait AdminRoutes extends HttpService with CORSSupport {
                 Future.successful(None)
               } else {
                 /* Prepare to yield a coloured Tile */
-                val tile = tileReader(layerId).read(key)
-                val ramp: ColorRamp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed)
-                val color = """0x(\p{XDigit}{8})""".r
-                val colorOptions: ColorMap.Options = nodataColor match {
-                  case Some(color(c)) =>
-                    ColorMap.Options.DEFAULT
-                      .copy(noDataColor = java.lang.Long.parseLong(c, 16).toInt)
-                  case _ => ColorMap.Options.DEFAULT
-                }
+                getTile(layerId, key).flatMap({ tile =>
+                  val ramp: ColorRamp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed)
+                  val color = """0x(\p{XDigit}{8})""".r
+                  val colorOptions: ColorMap.Options = nodataColor match {
+                    case Some(color(c)) =>
+                      ColorMap.Options.DEFAULT
+                        .copy(noDataColor = java.lang.Long.parseLong(c, 16).toInt)
+                    case _ => ColorMap.Options.DEFAULT
+                  }
 
-                breaksStore.get(breaksParam) match {
-                  case None => Future.successful(None)
-                  case Some(fut) => {
-                    fut.map { b: Array[Double] =>
-                      val colorMap = ramp.setAlpha(opacityParam)
-                        .toColorMap(b, colorOptions)
-                      Some(tile.renderPng(colorMap).bytes)
+                  breaksStore.get(breaksParam) match {
+                    case None => Future.successful(None)
+                    case Some(fut) => {
+                      fut.map { b: Array[Double] =>
+                        val colorMap = ramp.setAlpha(opacityParam)
+                          .toColorMap(b, colorOptions)
+                        Some(tile.renderPng(colorMap).bytes)
+                      }
                     }
                   }
-                }
+                })
               }
             }
           }
