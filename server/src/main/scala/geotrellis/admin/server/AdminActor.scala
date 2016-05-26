@@ -1,10 +1,12 @@
 package geotrellis.admin.server
 
+import geotrellis.raster.histogram.Histogram
 import scala.concurrent.Future
 
 import akka.actor._
 import geotrellis.admin.server.util._
 import geotrellis.raster._
+import geotrellis.raster.io._
 import geotrellis.raster.render._
 import geotrellis.spark._
 import geotrellis.spark.io._
@@ -74,9 +76,16 @@ trait AdminRoutes extends HttpService with CORSSupport {
     attributeStore.readMetadata[TileLayerMetadata[SpatialKey]](id)
   }
 
-  /* Find extra attributes written alongside normal metadata */
-  def extraAttributes(id: LayerId): Seq[String] =
-    attributeStore.availableAttributes(id)
+  def getAttributes(id: LayerId): Future[Map[String, JsValue]] = {
+    import DefaultJsonProtocol._
+
+    extraAttrStore(s"${id.name}/${id.zoom}") {
+      attributeStore.availableAttributes(id).foldRight(Map.empty[String, JsValue]) {
+        case ("metadata", acc) => acc  /* Exclude metadata */
+        case (att, acc) => acc + (att -> attributeStore.read[JsValue](id, att))
+      }
+    }
+  }
 
   /* Fetch a tile, either from the cache or S3 */
   def getTile(id: LayerId, key: SpatialKey): Future[Tile] =
@@ -135,15 +144,7 @@ trait AdminRoutes extends HttpService with CORSSupport {
     import DefaultJsonProtocol._
 
     complete {
-      val id = LayerId(layerName, zoom)
-
-      /* Cache the results of attribute calls */
-      extraAttrStore(s"${id.name}/${id.zoom}") {
-        extraAttributes(id).foldRight(Map.empty[String, JsValue]) {
-          case ("metadata", acc) => acc
-          case (att, acc) => acc + (att -> attributeStore.read[JsValue](id, att))
-        }
-      }
+      getAttributes(LayerId(layerName, zoom))
     }
   }
 
@@ -171,19 +172,36 @@ trait AdminRoutes extends HttpService with CORSSupport {
   }
 
   /**
-   * Calculate and store class breaks for a layer, and yield a UUID that
-   * references the saved breaks. Necessary for a `/tms/...` call.
-   */
+    * Calculate and store class breaks for a layer, and yield a UUID that
+    * references the saved breaks. Necessary for a `/tms/...` call.
+    *
+    * If a layer has a precalculated Histogram available on S3, that
+    * will be used to calculate the breaks instead of fetching the entire RDD.
+    * S3 Histogram data is assumed to take the shape: `JsArray[JsArray[Int]]`.
+    */
   def breaks = pathPrefix(Segment / IntNumber) { (layer, numBreaks) =>
     import DefaultJsonProtocol._
+
     complete {
-      val data = reader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](layerId(layer))
+      val id: LayerId = layerId(layer)
 
-      val breaks: Array[Double] = data.classBreaksDouble(numBreaks)
-      val uuid: String = java.util.UUID.randomUUID.toString
-      breaksStore(uuid)(breaks)
+      getAttributes(id).map({ attrs =>
+        val breaks: Array[Double] = attrs.get("histogram") match {
+          case Some(json: JsArray) => {
+            json.convertTo[Histogram[Int]].quantileBreaks(numBreaks).map(_.toDouble)
+          }
+          case _ => {
+            reader
+              .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](id)
+              .classBreaksDouble(numBreaks)
+          }
+        }
 
-      JsObject("classBreaks" -> JsString(uuid))
+        val uuid: String = java.util.UUID.randomUUID.toString
+        breaksStore(uuid)(breaks)
+
+        JsObject("classBreaks" -> JsString(uuid))
+      })
     }
   }
 
@@ -235,8 +253,8 @@ trait AdminRoutes extends HttpService with CORSSupport {
 
     complete {
       getTile(layerId, key).map({ tile =>
-        val histo = tile.histogram
-        val histoD = tile.histogramDouble
+        val histo: Histogram[Int] = tile.histogram
+        val histoD: Histogram[Double] = tile.histogramDouble
         val formattedHisto = {
           val buff = scala.collection.mutable.Buffer.empty[(Int, Long)]
           histo.foreach((v, c) => buff += ((v, c)))
