@@ -43,8 +43,8 @@ class DisplayHandler[M](modelRW: ModelRW[M, DisplayModel]) extends ActionHandler
         val parsed: js.Any = JSON.parse(res.responseText)
 
         decodeJs[Metadata](parsed) match {
-          case Xor.Right(m) => UpdateMetadata(Ready(m))
-          case Xor.Left(e) => UpdateMetadata(Failed(e))
+          case Xor.Right(m) => UpdateMetadata(Ready(m), Ready(res.responseText))
+          case Xor.Left(e) => UpdateMetadata(Failed(e), Ready(res.responseText))
         }
       }))
     }
@@ -58,7 +58,7 @@ class DisplayHandler[M](modelRW: ModelRW[M, DisplayModel]) extends ActionHandler
         }
       }))
     }
-    case UpdateMetadata(md) => updated(value.copy(metadata = md))
+    case UpdateMetadata(md, json) => updated(value.copy(metadata = md, rawMetadata = json))
     case UpdateAttributes(attrs) => updated(value.copy(attributes = attrs))
   }
 }

@@ -1,6 +1,7 @@
 package geotrellis.admin.client.routes
 
 import diode.react._
+import diode.react.ReactPot._
 import geotrellis.admin.client.circuit._
 import geotrellis.admin.client.components._
 import geotrellis.admin.client.components.map._
@@ -13,7 +14,7 @@ import scalacss.ScalaCssReact._
 
 object GeotrellisAdminViewer {
 
-  case class State(showModal: Boolean = true)
+  case class State(showModal: Boolean = true, showJSON: Boolean = false)
 
   class Backend($: BackendScope[ModelProxy[RootModel], State]) {
 
@@ -33,6 +34,14 @@ object GeotrellisAdminViewer {
             ^.onClick --> $.modState(_.copy(showModal = true)),
             "Map Settings"
           ),
+          <.button(
+            BootstrapStyles.buttonDefaultBlock,
+            ^.onClick --> $.modState(s => s.copy(showJSON = !s.showJSON)),
+            "Metadata JSON"
+          ),
+          (if (state.showJSON) {
+            props().displayM.rawMetadata.render(j => <.pre(j))
+          } else ""),
           <.div(
             props.connect(_.displayM)(InfoPanel(_))
           ),
