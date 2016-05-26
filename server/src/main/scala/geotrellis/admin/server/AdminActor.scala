@@ -89,12 +89,12 @@ trait AdminRoutes extends HttpService with CORSSupport {
       get {
         pathPrefix("gt") {
           pathPrefix("errorTile")(errorTile) ~
-            pathPrefix("bounds")(bounds) ~
-            pathPrefix("metadata")(metadata) ~
-            pathPrefix("layers")(layers) ~
-            pathPrefix("attributes")(attributes) ~
-            pathPrefix("tms")(tms) ~
-            pathPrefix("breaks")(breaks)
+          pathPrefix("bounds")(bounds) ~
+          pathPrefix("metadata")(metadata) ~
+          pathPrefix("layers")(layers) ~
+          pathPrefix("attributes")(attributes) ~
+          pathPrefix("tms")(tms) ~
+          pathPrefix("breaks")(breaks)
         }
       }
     }
@@ -200,11 +200,11 @@ trait AdminRoutes extends HttpService with CORSSupport {
       val layerId = LayerId(layer, zoom)
 
       pathPrefix("grid")(tmsGrid(layerId, key)) ~
-        pathPrefix("type")(tmsType(layerId, key)) ~
-        pathPrefix("breaks")(tmsBreaks(layerId, key)) ~
-        pathPrefix("histo")(tmsHisto(layerId, key)) ~
-        pathPrefix("stats")(tmsStats(layerId, key)) ~
-        pathEnd(serveTile(layerId, key))
+      pathPrefix("type")(tmsType(layerId, key)) ~
+      pathPrefix("breaks")(tmsBreaks(layerId, key)) ~
+      pathPrefix("histo")(tmsHisto(layerId, key)) ~
+      pathPrefix("stats")(tmsStats(layerId, key)) ~
+      pathEnd(serveTile(layerId, key))
     }
   }
 
