@@ -23,8 +23,8 @@ class DisplayHandler[M](modelRW: ModelRW[M, DisplayModel]) extends ActionHandler
     case UpdateDisplay =>
       effectOnly(
         Effect.action(UpdateDisplayLayer) + Effect.action(UpdateDisplayBreaksCount) +  Effect.action(UpdateDisplayRamp) + Effect.action(UpdateDisplayOpacity) >>
-        Effect.action(RefreshBreaks) >>
-        Effect.action(UpdateTileLayer) + Effect.action(CollectMetadata) + Effect.action(CollectAttributes)
+        Effect.action(RefreshBreaks)
+//        Effect.action(UpdateTileLayer) // + Effect.action(CollectMetadata) + Effect.action(CollectAttributes)
       )
     case UpdateDisplayLayer => {
       val ld = ClientCircuit.zoom(_.layerM.selection).value
@@ -80,7 +80,6 @@ class LeafletHandler[M](modelRW: ModelRW[M, LeafletModel]) extends ActionHandler
       } yield {
         value.lmap.foreach { lmap: LMap =>
           value.gtLayer.foreach(lmap.removeLayer(_))
-          //lmap.setZoom(minZoom)
         }
         value.gtLayer.foreach(value.lmap.get.removeLayer(_))
         val url = SiteConfig.adminHostUrl(s"""/gt/tms/${layer.name}/{z}/{x}/{y}?colorRamp=${colorRamp}&breaks=${breaks}&opacity=${opacity}""")
