@@ -24,14 +24,9 @@ class DisplayHandler[M](modelRW: ModelRW[M, DisplayModel]) extends ActionHandler
       effectOnly(
         Effect.action(UpdateDisplayLayer) + Effect.action(UpdateDisplayBreaksCount) +  Effect.action(UpdateDisplayRamp) + Effect.action(UpdateDisplayOpacity) >>
         Effect.action(RefreshBreaks)
-//        Effect.action(UpdateTileLayer) // + Effect.action(CollectMetadata) + Effect.action(CollectAttributes)
       )
-    case UpdateDisplayLayer => {
-      val ld = ClientCircuit.zoom(_.layerM.selection).value
-      updated(
-        value.copy(layer = ld)
-      )
-    }
+    case UpdateDisplayLayer =>
+      updated(value.copy(layer = ClientCircuit.zoom(_.layerM.selection).value))
     case UpdateDisplayRamp =>
       updated(value.copy(ramp = ClientCircuit.zoom(_.colorM.ramp).value))
     case UpdateDisplayOpacity =>
@@ -88,10 +83,16 @@ class LeafletHandler[M](modelRW: ModelRW[M, LeafletModel]) extends ActionHandler
         newLayer
       }
 
-      updated(value.copy(gtLayer = gtLayer), Effect.action(UpdateZoomLevel(value.zoom)))
+      /* Fix the "no initial metadata" bug (GH #27)*/
+      val zoom: Option[Int] = value.zoom.orElse(value.lmap.map(_.getZoom))
+
+      updated(value.copy(gtLayer = gtLayer), Effect.action(UpdateZoomLevel(zoom)))
     }
     case UpdateZoomLevel(zl) =>
-      updated(value.copy(zoom = zl), Effect.action(CollectMetadata) + Effect.action(CollectAttributes))
+      updated(
+        value.copy(zoom = zl),
+        Effect.action(CollectMetadata) + Effect.action(CollectAttributes)
+      )
   }
 }
 

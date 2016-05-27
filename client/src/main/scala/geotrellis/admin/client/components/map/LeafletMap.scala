@@ -52,7 +52,8 @@ object LeafletMap {
       }) >>
       ($.props >>= { props: ModelProxy[LeafletModel] =>
         Callback {
-          val lmap = props().lmap.get
+          val lmap: LMap = props().lmap.get
+
           lmap.onZoomend({ e: LDragEndEvent =>
             val zl: Int = lmap.getZoom()
             props.dispatch(UpdateZoomLevel(Some(zl))).runNow()
