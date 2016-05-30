@@ -65,10 +65,8 @@ object LayerList {
     }
   }
 
-  private val layerViewer = ReactComponentB[ModelProxy[LayerModel]]("LayerViewer")
+  val layerSelect = ReactComponentB[ModelProxy[LayerModel]]("LayerSelect")
     .renderBackend[LayerBackend]
     .componentDidMount(scope => scope.backend.onMount(scope.props))
     .build
-
-  def apply(proxy: ModelProxy[LayerModel]) = layerViewer(proxy)
 }

@@ -115,43 +115,33 @@ object ColorRampList {
 
   }
 
-  class Backend($: BackendScope[ModelProxy[ColorModel], Unit]) {
-
-    def onMount(proxy: ModelProxy[ColorModel]) =
-      proxy.dispatch(SelectColorRamp(colorRamps.keys.headOption))
-
-    def render(proxy: ModelProxy[ColorModel]) = {
-      val selected = proxy().ramp.getOrElse("blue-to-orange")
-      <.div(
-        Style.paletteContainer,
-        <.h3("Color ramp"),
-        <.ul(
-          Style.colorPaletteList,
-          ^.className := "color-list",
-          colorRamps.map { case (name, colors) =>
-            <.li(
-              if (name == selected) Style.selectedColorPalette else Style.unselectedColorPalette,
-              Style.colorPalette,
-              ^.key := name,
-              ^.onClick --> proxy.dispatch(SelectColorRamp(Some(name))),
-              colors.map { color =>
-                <.div(
-                  ^.key := color,
-                  Style.color,
-                  ^.style := js.Dictionary("width" -> s"${100.0 / colors.length}%", "backgroundColor" -> color)
-                )
-              }
-            )
-          }
-        )
+  val colorRampSelect = ReactComponentB[ModelProxy[ColorModel]]("ColorRampSelect").render_P({ proxy =>
+    val selected = proxy().ramp.getOrElse("blue-to-orange")
+    <.div(
+      Style.paletteContainer,
+      <.h3("Color ramp"),
+      <.ul(
+        Style.colorPaletteList,
+        ^.className := "color-list",
+        colorRamps.map { case (name, colors) =>
+          <.li(
+            if (name == selected) Style.selectedColorPalette else Style.unselectedColorPalette,
+            Style.colorPalette,
+            ^.key := name,
+            ^.onClick --> proxy.dispatch(SelectColorRamp(Some(name))),
+            colors.map { color =>
+              <.div(
+                ^.key := color,
+                Style.color,
+                ^.style := js.Dictionary("width" -> s"${100.0 / colors.length}%", "backgroundColor" -> color)
+              )
+            }
+          )
+        }
       )
-    }
-  }
+    )
+  }).componentDidMount(scope => onMount(scope.props)).build
 
-  private val colorRampSelect = ReactComponentB[ModelProxy[ColorModel]]("ColorRampSelect")
-    .renderBackend[Backend]
-    .componentDidMount(scope => scope.backend.onMount(scope.props))
-    .build
-
-  def apply(props: ModelProxy[ColorModel]) = colorRampSelect(props)
+  def onMount(proxy: ModelProxy[ColorModel]) =
+    proxy.dispatch(SelectColorRamp(colorRamps.keys.headOption))
 }

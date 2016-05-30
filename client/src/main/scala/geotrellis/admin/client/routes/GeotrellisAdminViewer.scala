@@ -45,7 +45,7 @@ object GeotrellisAdminViewer {
           <.div(
             props.connect(_.displayM)(InfoPanel(_))
           ),
-          if (state.showModal) SettingsModal(SettingsModal.Props(onModalAccept, onModalClose))
+          if (state.showModal) SettingsModal.settings(SettingsModal.Props(onModalAccept, onModalClose))
           else Seq.empty[ReactElement]
         )
       )
