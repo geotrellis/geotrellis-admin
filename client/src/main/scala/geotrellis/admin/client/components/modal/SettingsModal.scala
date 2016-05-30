@@ -24,7 +24,7 @@ object SettingsModal {
       <.div(
         Modal(
           Modal.Props(
-            header = hide => <.span(<.button(^.tpe := "button", bss.close, ^.onClick --> (props.onClose >> hide), "x"), <.h2("Layer rendering options")),
+            header = hide => <.span(<.button(^.tpe := "button", bss.close, ^.onClick --> (props.onClose >> hide), "x"), <.h2("Layer Rendering Options")),
             footer = hide => <.span(Button(Button.Props(props.onAccept >> hide), "OK")),
             closed = props.onClose
           ),

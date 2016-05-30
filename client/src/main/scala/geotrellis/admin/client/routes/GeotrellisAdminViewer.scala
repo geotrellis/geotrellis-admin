@@ -32,7 +32,7 @@ object GeotrellisAdminViewer {
           <.button(
             BootstrapStyles.buttonDefaultBlock,
             ^.onClick --> $.modState(_.copy(showModal = true)),
-            "Map Settings"
+            "Layer Settings"
           ),
           <.button(
             BootstrapStyles.buttonDefaultBlock,
