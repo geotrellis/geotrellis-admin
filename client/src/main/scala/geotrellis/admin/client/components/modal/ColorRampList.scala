@@ -116,10 +116,11 @@ object ColorRampList {
   }
 
   val colorRampSelect = ReactComponentB[ModelProxy[ColorModel]]("ColorRampSelect").render_P({ proxy =>
-    val selected = proxy().ramp.getOrElse("blue-to-orange")
+    val selected: String = proxy().ramp.getOrElse("blue-to-orange")
+
     <.div(
       Style.paletteContainer,
-      <.h3("Color ramp"),
+      <.h3("Color Ramp"),
       <.ul(
         Style.colorPaletteList,
         ^.className := "color-list",
@@ -142,6 +143,16 @@ object ColorRampList {
     )
   }).componentDidMount(scope => onMount(scope.props)).build
 
-  def onMount(proxy: ModelProxy[ColorModel]) =
-    proxy.dispatch(SelectColorRamp(colorRamps.keys.headOption))
+  /* Mounting happens every time the Settings window is summoned. To avoid
+   * extraneously resetting the selected Color Ramp to what it already was
+   * within the Diode model, we use `Callback.empty` here.
+   *
+   * We _do_ need `onMount` behaviour here, or else the first Ramp will never
+   * be selected if the user doesn't click one themselves.
+   */
+  def onMount(proxy: ModelProxy[ColorModel]) = proxy().ramp match {
+    case None => proxy.dispatch(SelectColorRamp(Some("blue-to-orange")))
+    case Some(_) => Callback.empty
+  }
+
 }
