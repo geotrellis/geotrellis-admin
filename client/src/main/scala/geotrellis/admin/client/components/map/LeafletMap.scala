@@ -46,20 +46,22 @@ object LeafletMap {
 
   class Backend($: BackendScope[ModelProxy[LeafletModel], Unit]) {
 
-    def init =
+    def init = {
       ($.props >>= { props: ModelProxy[LeafletModel] =>
         props.dispatch(InitLMap("map", defaultMapOptions))
       }) >>
       ($.props >>= { props: ModelProxy[LeafletModel] =>
-        Callback {
-          val lmap: LMap = props().lmap.get
-
-          lmap.onZoomend({ e: LDragEndEvent =>
-            val zl: Int = lmap.getZoom()
-            props.dispatch(UpdateZoomLevel(Some(zl))).runNow()
-          })
+        props().lmap match {
+          case None => Callback.empty
+          case Some(lmap) => Callback {
+            lmap.onZoomend({ e: LDragEndEvent =>
+              val zl: Int = lmap.getZoom()
+              props.dispatch(UpdateZoomLevel(Some(zl))).runNow()
+            })
+          }
         }
       })
+    }
 
     def render() =
       <.div(^.id := "map")
