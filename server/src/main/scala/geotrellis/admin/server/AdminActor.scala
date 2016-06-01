@@ -1,10 +1,12 @@
 package geotrellis.admin.server
 
+import geotrellis.raster.histogram.Histogram
 import scala.concurrent.Future
 
 import akka.actor._
 import geotrellis.admin.server.util._
 import geotrellis.raster._
+import geotrellis.raster.io._
 import geotrellis.raster.render._
 import geotrellis.spark._
 import geotrellis.spark.io._
@@ -28,13 +30,13 @@ class AdminActor extends Actor with AdminRoutes {
       .setJars(SparkContext.jarOfObject(this).toList)
   )
 
-  implicit val sparkContext = new SparkContext(conf)
+  implicit val sparkContext: SparkContext = new SparkContext(conf)
 
-  override def actorRefFactory = context
+  override def actorRefFactory: ActorContext = context
   override def receive = runRoute(serviceRoute)
 
-  val s3Bucket = sys.env("S3_BUCKET")
-  val s3Key = sys.env("S3_KEY")
+  val s3Bucket: String = sys.env("S3_BUCKET")
+  val s3Key: String = sys.env("S3_KEY")
 
   override lazy val reader: LayerReader[LayerId] = S3LayerReader(s3Bucket, s3Key)
   override lazy val attributeStore: AttributeStore = S3AttributeStore(s3Bucket, s3Key)
@@ -52,13 +54,19 @@ trait AdminRoutes extends HttpService with CORSSupport {
   def attributeStore: AttributeStore
   def tileReader(id: LayerId): Reader[SpatialKey, Tile]
 
-  val baseZoomLevel = 4
+  val baseZoomLevel: Int = 4
 
   val breaksStore: Cache[Array[Double]] = LruCache()
   val metadataStore: Cache[TileLayerMetadata[SpatialKey]] = LruCache()
 
   /* Extra attributes besides metadata */
   val extraAttrStore: Cache[Map[String, JsValue]] = LruCache()
+
+  /* Uncoloured Tiles
+   * While Leaflet does cache coloured tiles to a degree,
+   * this cache is useful if the user changes colour ramps.
+   */
+  val tileStore: Cache[Tile] = LruCache(initialCapacity = 64)
 
   def layerId(layer: String): LayerId =
     LayerId(layer, baseZoomLevel)
@@ -68,21 +76,34 @@ trait AdminRoutes extends HttpService with CORSSupport {
     attributeStore.readMetadata[TileLayerMetadata[SpatialKey]](id)
   }
 
-  /* Find extra attributes written alongside normal metadata */
-  def extraAttributes(id: LayerId): Seq[String] =
-    attributeStore.availableAttributes(id)
+  def getAttributes(id: LayerId): Future[Map[String, JsValue]] = {
+    import DefaultJsonProtocol._
+
+    extraAttrStore(s"${id.name}/${id.zoom}") {
+      attributeStore.availableAttributes(id).foldRight(Map.empty[String, JsValue]) {
+        case ("metadata", acc) => acc  /* Exclude metadata */
+        case (att, acc) => acc + (att -> attributeStore.read[JsValue](id, att))
+      }
+    }
+  }
+
+  /* Fetch a tile, either from the cache or S3 */
+  def getTile(id: LayerId, key: SpatialKey): Future[Tile] =
+    tileStore(s"${id.name}/${id.zoom}/${key.col}/${key.row}") {
+      tileReader(id).read(key)
+    }
 
   def serviceRoute =
     cors {
       get {
         pathPrefix("gt") {
           pathPrefix("errorTile")(errorTile) ~
-            pathPrefix("bounds")(bounds) ~
-            pathPrefix("metadata")(metadata) ~
-            pathPrefix("layers")(layers) ~
-            pathPrefix("attributes")(attributes) ~
-            pathPrefix("tms")(tms) ~
-            pathPrefix("breaks")(breaks)
+          pathPrefix("bounds")(bounds) ~
+          pathPrefix("metadata")(metadata) ~
+          pathPrefix("layers")(layers) ~
+          pathPrefix("attributes")(attributes) ~
+          pathPrefix("tms")(tms) ~
+          pathPrefix("breaks")(breaks)
         }
       }
     }
@@ -123,15 +144,7 @@ trait AdminRoutes extends HttpService with CORSSupport {
     import DefaultJsonProtocol._
 
     complete {
-      val id = LayerId(layerName, zoom)
-
-      /* Cache the results of attribute calls */
-      extraAttrStore(s"${id.name}/${id.zoom}") {
-        extraAttributes(id).foldRight(Map.empty[String, JsValue]) {
-          case ("metadata", acc) => acc
-          case (att, acc) => acc + (att -> attributeStore.read[JsValue](id, att))
-        }
-      }
+      getAttributes(LayerId(layerName, zoom))
     }
   }
 
@@ -159,19 +172,36 @@ trait AdminRoutes extends HttpService with CORSSupport {
   }
 
   /**
-   * Calculate and store class breaks for a layer, and yield a UUID that
-   * references the saved breaks. Necessary for a `/tms/...` call.
-   */
+    * Calculate and store class breaks for a layer, and yield a UUID that
+    * references the saved breaks. Necessary for a `/tms/...` call.
+    *
+    * If a layer has a precalculated Histogram available on S3, that
+    * will be used to calculate the breaks instead of fetching the entire RDD.
+    * S3 Histogram data is assumed to take the shape: `JsArray[JsArray[Int]]`.
+    */
   def breaks = pathPrefix(Segment / IntNumber) { (layer, numBreaks) =>
     import DefaultJsonProtocol._
+
     complete {
-      val data = reader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](layerId(layer))
+      val id: LayerId = layerId(layer)
 
-      val breaks: Array[Double] = data.classBreaksDouble(numBreaks)
-      val uuid: String = java.util.UUID.randomUUID.toString
-      breaksStore(uuid)(breaks)
+      getAttributes(id).map({ attrs =>
+        val breaks: Array[Double] = attrs.get("histogram") match {
+          case Some(json: JsArray) => {
+            json.convertTo[Histogram[Int]].quantileBreaks(numBreaks).map(_.toDouble)
+          }
+          case _ => {
+            reader
+              .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](id)
+              .classBreaksDouble(numBreaks)
+          }
+        }
 
-      JsObject("classBreaks" -> JsString(uuid))
+        val uuid: String = java.util.UUID.randomUUID.toString
+        breaksStore(uuid)(breaks)
+
+        JsObject("classBreaks" -> JsString(uuid))
+      })
     }
   }
 
@@ -188,23 +218,23 @@ trait AdminRoutes extends HttpService with CORSSupport {
       val layerId = LayerId(layer, zoom)
 
       pathPrefix("grid")(tmsGrid(layerId, key)) ~
-        pathPrefix("type")(tmsType(layerId, key)) ~
-        pathPrefix("breaks")(tmsBreaks(layerId, key)) ~
-        pathPrefix("histo")(tmsHisto(layerId, key)) ~
-        pathPrefix("stats")(tmsStats(layerId, key)) ~
-        pathEnd(serveTile(layerId, key))
+      pathPrefix("type")(tmsType(layerId, key)) ~
+      pathPrefix("breaks")(tmsBreaks(layerId, key)) ~
+      pathPrefix("histo")(tmsHisto(layerId, key)) ~
+      pathPrefix("stats")(tmsStats(layerId, key)) ~
+      pathEnd(serveTile(layerId, key))
     }
   }
 
   def tmsGrid(layerId: LayerId, key: SpatialKey): StandardRoute = {
     complete {
-      tileReader(layerId).read(key).asciiDrawDouble()
+      getTile(layerId, key).map(_.asciiDrawDouble())
     }
   }
 
   def tmsType(layerId: LayerId, key: SpatialKey): StandardRoute = {
     complete {
-      tileReader(layerId).read(key).getClass.getName
+      getTile(layerId, key).map(_.getClass.getName)
     }
   }
 
@@ -212,8 +242,9 @@ trait AdminRoutes extends HttpService with CORSSupport {
     import DefaultJsonProtocol._
 
     complete {
-      val tile = tileReader(layerId).read(key)
-      JsObject("classBreaks" -> tile.classBreaksDouble(100).toJson)
+      getTile(layerId, key).map(t =>
+        JsObject("classBreaks" -> t.classBreaksDouble(100).toJson)
+      )
     }
   }
 
@@ -221,24 +252,25 @@ trait AdminRoutes extends HttpService with CORSSupport {
     import DefaultJsonProtocol._
 
     complete {
-      val tile = tileReader(layerId).read(key)
-      val histo = tile.histogram
-      val histoD = tile.histogramDouble
-      val formattedHisto = {
-        val buff = scala.collection.mutable.Buffer.empty[(Int, Long)]
-        histo.foreach((v, c) => buff += ((v, c)))
-        buff.to[Vector]
-      }
-      val formattedHistoD = {
-        val buff = scala.collection.mutable.Buffer.empty[(Double, Long)]
-        histoD.foreach((v, c) => buff += ((v, c)))
-        buff.to[Vector]
-      }
+      getTile(layerId, key).map({ tile =>
+        val histo: Histogram[Int] = tile.histogram
+        val histoD: Histogram[Double] = tile.histogramDouble
+        val formattedHisto = {
+          val buff = scala.collection.mutable.Buffer.empty[(Int, Long)]
+          histo.foreach((v, c) => buff += ((v, c)))
+          buff.to[Vector]
+        }
+        val formattedHistoD = {
+          val buff = scala.collection.mutable.Buffer.empty[(Double, Long)]
+          histoD.foreach((v, c) => buff += ((v, c)))
+          buff.to[Vector]
+        }
 
-      JsObject(
-        "histo" -> formattedHisto.toJson,
-        "histoDouble" -> formattedHistoD.toJson
-      )
+        JsObject(
+          "histo" -> formattedHisto.toJson,
+          "histoDouble" -> formattedHistoD.toJson
+        )
+      })
     }
   }
 
@@ -246,11 +278,12 @@ trait AdminRoutes extends HttpService with CORSSupport {
     import DefaultJsonProtocol._
 
     complete {
-      val tile = tileReader(layerId).read(key)
-      JsObject(
-        "statistics" -> tile.statistics.toString.toJson,
-        "statisticsDouble" -> tile.statisticsDouble.toString.toJson
-      )
+      getTile(layerId, key).map({ tile =>
+        JsObject(
+          "statistics" -> tile.statistics.toString.toJson,
+          "statisticsDouble" -> tile.statisticsDouble.toString.toJson
+        )
+      })
     }
   }
 
@@ -273,26 +306,27 @@ trait AdminRoutes extends HttpService with CORSSupport {
                 Future.successful(None)
               } else {
                 /* Prepare to yield a coloured Tile */
-                val tile = tileReader(layerId).read(key)
-                val ramp: ColorRamp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed)
-                val color = """0x(\p{XDigit}{8})""".r
-                val colorOptions: ColorMap.Options = nodataColor match {
-                  case Some(color(c)) =>
-                    ColorMap.Options.DEFAULT
-                      .copy(noDataColor = java.lang.Long.parseLong(c, 16).toInt)
-                  case _ => ColorMap.Options.DEFAULT
-                }
+                getTile(layerId, key).flatMap({ tile =>
+                  val ramp: ColorRamp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed)
+                  val color = """0x(\p{XDigit}{8})""".r
+                  val colorOptions: ColorMap.Options = nodataColor match {
+                    case Some(color(c)) =>
+                      ColorMap.Options.DEFAULT
+                        .copy(noDataColor = java.lang.Long.parseLong(c, 16).toInt)
+                    case _ => ColorMap.Options.DEFAULT
+                  }
 
-                breaksStore.get(breaksParam) match {
-                  case None => Future.successful(None)
-                  case Some(fut) => {
-                    fut.map { b: Array[Double] =>
-                      val colorMap = ramp.setAlpha(opacityParam)
-                        .toColorMap(b, colorOptions)
-                      Some(tile.renderPng(colorMap).bytes)
+                  breaksStore.get(breaksParam) match {
+                    case None => Future.successful(None)
+                    case Some(fut) => {
+                      fut.map { b: Array[Double] =>
+                        val colorMap = ramp.setAlpha(opacityParam)
+                          .toColorMap(b, colorOptions)
+                        Some(tile.renderPng(colorMap).bytes)
+                      }
                     }
                   }
-                }
+                })
               }
             }
           }
