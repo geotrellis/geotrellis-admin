@@ -11,33 +11,25 @@ import scalacss.ScalaCssReact._
 
 object ColorOpacity {
 
-  class Backend($: BackendScope[ModelProxy[ColorModel], Unit]) {
+  val colorOpacitySelect = ReactComponentB[ModelProxy[ColorModel]]("ColorOpacitySelect").render_P({ proxy =>
+    val opacity = proxy().opacity
 
-    def render(proxy: ModelProxy[ColorModel]) = {
-      val opacity = proxy().opacity
-
-      <.div(
-        BootstrapStyles.formGroup,
-        <.label(
-          ^.style := js.Dictionary("opacity" -> s"${0.01 * opacity}"),
-          ^.htmlFor := "opacitySelect",
-          s"Opacity: ${opacity}%"
-        ),
-        <.input.range(
-          ^.id := "opacitySelect",
-          ^.min := "0",
-          ^.max := "100",
-          ^.step := 1,
-          ^.onChange ==> { (e: ReactEventI) => proxy.dispatch(SetOpacity(e.target.value.toInt)) },
-          ^.value := opacity
-        )
+    <.div(
+      BootstrapStyles.formGroup,
+      <.label(
+        ^.style := js.Dictionary("opacity" -> s"${0.01 * opacity}"),
+        ^.htmlFor := "opacitySelect",
+        s"Opacity: ${opacity}%"
+      ),
+      <.input.range(
+        ^.id := "opacitySelect",
+        ^.min := "0",
+        ^.max := "100",
+        ^.step := 1,
+        ^.onChange ==> { (e: ReactEventI) => proxy.dispatch(SetOpacity(e.target.value.toInt)) },
+        ^.value := opacity
       )
-    }
-  }
+    )
+  }).build
 
-  private val colorOpacitySelect = ReactComponentB[ModelProxy[ColorModel]]("ColorOpacitySelect")
-    .renderBackend[Backend]
-    .build
-
-  def apply(props: ModelProxy[ColorModel]) = colorOpacitySelect(props)
 }

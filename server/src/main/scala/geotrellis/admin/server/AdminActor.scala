@@ -11,7 +11,6 @@ import geotrellis.raster.render._
 import geotrellis.spark._
 import geotrellis.spark.io._
 import geotrellis.spark.io.s3._
-import geotrellis.vector.io.json.Implicits._
 import org.apache.spark.{SparkConf, SparkContext}
 import scala.util.Try
 import spray.caching._
@@ -19,6 +18,8 @@ import spray.http._
 import spray.httpx.SprayJsonSupport._
 import spray.json._
 import spray.routing._
+
+// --- //
 
 class AdminActor extends Actor with AdminRoutes {
   val conf: SparkConf = KryoRegistration.register(
