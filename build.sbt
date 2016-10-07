@@ -13,7 +13,8 @@ lazy val commonSettings = Seq(
     "-language:postfixOps",
     "-language:existentials",
     "-feature"
-    ),
+  ),
+  resolvers += Resolver.bintrayRepo("azavea", "geotrellis"),
   libraryDependencies ++= Seq(),
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 )
@@ -21,10 +22,11 @@ lazy val commonSettings = Seq(
 lazy val serverSettings = Seq(
   name := "geotrellis-admin-server",
   libraryDependencies ++= Seq(
-    "com.azavea.geotrellis" %% "geotrellis-spark-etl"     % "0.10.0",
-    "com.azavea.geotrellis" %% "geotrellis-s3"            % "0.10.0",
-    "com.azavea.geotrellis" %% "geotrellis-raster"        % "0.10.0",
-    "org.apache.spark"      %% "spark-core"               % "1.5.2" % "provided",
+    "com.azavea.geotrellis" %% "geotrellis-spark-etl"     % "1.0.0-54905b6",
+    "com.azavea.geotrellis" %% "geotrellis-s3"            % "1.0.0-54905b6",
+    "com.azavea.geotrellis" %% "geotrellis-raster"        % "1.0.0-54905b6",
+    "com.typesafe.akka"     %% "akka-actor"               % "2.4.11",
+    "org.apache.spark"      %% "spark-core"               % "2.0.0" % "provided",
     "io.spray"              %% "spray-routing"            % "1.3.3",
     "io.spray"              %% "spray-caching"            % "1.3.3",
     "io.spray"              %% "spray-can"                % "1.3.3",
